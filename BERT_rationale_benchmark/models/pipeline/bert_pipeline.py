@@ -121,7 +121,7 @@ def scores_per_word_from_scores_per_token(input, tokenizer, input_ids, scores_pe
         if start_idx >= len(score_per_char):
             break
         end_idx = end_idx + len(inp)
-        score_per_word.append(np.max(score_per_char[start_idx:end_idx]))
+        score_per_word.append(np.max([item.detach() for item in score_per_char[start_idx:end_idx]]))
 
         # TODO: DELETE
         words_from_chars.append(''.join(input_ids_chars[start_idx:end_idx]))
