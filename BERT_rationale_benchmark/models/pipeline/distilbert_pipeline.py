@@ -278,7 +278,7 @@ def main():
             interned_documents[d] = encoding
         torch.save((interned_documents), cache)
 
-    # evidence_classifier = evidence_classifier.cuda()
+    evidence_classifier = evidence_classifier.cuda()
     optimizer = None
     scheduler = None
 
@@ -318,7 +318,7 @@ def main():
     epoch_data = {}
     if os.path.exists(epoch_save_file):
         logging.info(f'Restoring model from {model_save_file}')
-        evidence_classifier.load_state_dict(torch.load(model_save_file, map_location=torch.device('cpu')))
+        evidence_classifier.load_state_dict(torch.load(model_save_file))
         epoch_data = torch.load(epoch_save_file)
         start_epoch = epoch_data['epoch'] + 1
         # handle finishing because patience was exceeded or we didn't get the best final epoch
@@ -435,8 +435,8 @@ def main():
                                                             num_labels=len(evidence_classes)).to(device)
     if os.path.exists(epoch_save_file):
         logging.info(f'Restoring model from {model_save_file}')
-        test_classifier.load_state_dict(torch.load(model_save_file, map_location=torch.device('cpu')))
-        orig_lrp_classifier.load_state_dict(torch.load(model_save_file, map_location=torch.device('cpu')))
+        test_classifier.load_state_dict(torch.load(model_save_file))
+        orig_lrp_classifier.load_state_dict(torch.load(model_save_file))
         test_classifier.eval()
         orig_lrp_classifier.eval()
         test_batch_size = 1
