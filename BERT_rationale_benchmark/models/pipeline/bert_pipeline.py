@@ -364,7 +364,7 @@ def main():
             epoch_val_acc = 0
             epoch_val_data = random.sample(val, k=len(val))
             evidence_classifier.eval()
-            val_batch_size = 1
+            val_batch_size = 8
             logging.info(
                 f'Validating with {len(epoch_val_data) // val_batch_size} batches with {len(epoch_val_data)} examples')
             for batch_start in range(0, len(epoch_val_data), val_batch_size):
