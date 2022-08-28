@@ -456,7 +456,8 @@ def main():
 
         j = 0
         for batch_start in range(0, len(test), test_batch_size):
-            batch_elements = test[batch_start:min(batch_start + test_batch_size, len(test))]
+            batch_elements = test[0:min(0 + test_batch_size, len(test))]
+            test = test[test_batch_size:]
             targets = [evidence_classes[s.classification] for s in batch_elements]
             targets = torch.tensor(targets, dtype=torch.long, device=device)
             samples_encoding = [interned_documents[extract_docid_from_dataset_element(s)] for s in batch_elements]
