@@ -549,6 +549,8 @@ def main():
                 classification = "neg" if targets.item() == 0 else "pos"
                 is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
                 target_idx = targets.item()
+                print("FORDOR")
+                print(batch_start)
                 cam_target = method_expl[method](input_ids=input_ids, attention_mask=attention_masks, index=target_idx)[0]
                 cam_target = cam_target.clamp(min=0)
                 generate(text, cam_target,
