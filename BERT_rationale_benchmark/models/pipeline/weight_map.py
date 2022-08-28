@@ -26,8 +26,11 @@ from captum.attr import (
 from BERT_rationale_benchmark.utils import load_documents, load_datasets
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-directory = "C:/Users/Dor_local/Downloads/"
-data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies"
+
+directory = "/home/joberant/NLP_2122/dorcoh4/weight_map/"
+data_dir = "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
+# directory = "C:/Users/Dor_local/Downloads/"
+# data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies"
 
 
 def convert_dataset(raw_dataset, documents, name):
