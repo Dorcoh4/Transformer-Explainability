@@ -418,7 +418,8 @@ def main():
     evidence_classifier.eval()
 
     # test
-
+    del train
+    del val
     test_classifier = BertForSequenceClassificationTest.from_pretrained(model_params['bert_dir'],
                                                                         num_labels=len(evidence_classes)).to(device)
     orig_lrp_classifier = BertForClsOrigLrp.from_pretrained(model_params['bert_dir'],
