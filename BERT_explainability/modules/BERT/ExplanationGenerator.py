@@ -4,6 +4,9 @@ import torch
 import glob
 
 # compute rollout between attention layers
+from transformers import AutoTokenizer
+
+
 def compute_rollout_attention(all_layer_matrices, start_layer=0):
     # adding residual consideration- code adapted from https://github.com/samiraabnar/attention_flow
     num_tokens = all_layer_matrices[0].shape[1]
@@ -18,9 +21,10 @@ def compute_rollout_attention(all_layer_matrices, start_layer=0):
     return joint_attention
 
 class Generator:
-    def __init__(self, model):
+    def __init__(self, model, masker=None):
         self.model = model
         self.model.eval()
+        self.masker = masker
 
     def forward(self, input_ids, attention_mask):
         return self.model(input_ids, attention_mask)
@@ -153,4 +157,11 @@ class Generator:
         cam = (cam - cam.min()) / (cam.max() - cam.min())
         cam[:, 0, 0] = 0
         return cam[:, 0]
+
+
+    def generate_distilbert_explanation(self, input_ids, attention_mask, index=None):
+        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        masker_output = torch.sigmoid(self.masker(input_ids=input_ids, attention_mask=attention_mask).logits)
+        classifier_output = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        return masker_output
 
