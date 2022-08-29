@@ -163,7 +163,7 @@ class Generator:
     def generate_distilbert_explanation(self, input_ids, attention_mask, index=None): #FORDOR not the right tokenizer
         tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
         new_batch = tokenizer(self.bert_tokenizer.batch_decode(input_ids)[0][6:-6])
-        masker_output = torch.sigmoid(self.masker(input_ids=torch.IntTensor(new_batch['input_ids'], device=device).unsqueeze(0), attention_mask=torch.IntTensor(new_batch['attention_mask'], device=device).unsqueeze(0)).logits)
+        masker_output = torch.sigmoid(self.masker(input_ids=torch.tensor(new_batch['input_ids'], dtype=torch.int, device=device).unsqueeze(0), attention_mask=torch.tensor(new_batch['attention_mask'], device=device, dtype=torch.int).unsqueeze(0)).logits)
         # classifier_output = self.model(input_ids=input_ids, attention_mask=attention_mask)
         return masker_output
 
