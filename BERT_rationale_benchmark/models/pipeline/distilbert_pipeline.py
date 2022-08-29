@@ -446,7 +446,7 @@ def main():
         # explainability
         explanations = Generator(test_classifier, masker)
         explanations_orig_lrp = Generator(orig_lrp_classifier, masker)
-        method = "distilbert"
+        method = "last_attn"
         method_folder = {"transformer_attribution": "ours", "partial_lrp": "partial_lrp", "last_attn": "last_attn",
                          "attn_gradcam": "attn_gradcam", "lrp": "lrp", "rollout": "rollout",
                          "ground_truth": "ground_truth", "generate_all": "generate_all", "distilbert": "distilbert"}
