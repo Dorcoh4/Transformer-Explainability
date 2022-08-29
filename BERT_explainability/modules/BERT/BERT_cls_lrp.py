@@ -1,4 +1,5 @@
 from transformers import BertPreTrainedModel
+from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.utils import logging
 from BERT_explainability.modules.layers_lrp import *
 from BERT_explainability.modules.BERT.BERT_orig_lrp import BertModel
