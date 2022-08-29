@@ -160,10 +160,12 @@ class Generator:
         cam[:, 0, 0] = 0
         return cam[:, 0]
 
-    def generate_distilbert_explanation(self, input_ids, attention_mask, index=None): #FORDOR not the right tokenizer
+    def generate_distilbert_explanation(self, input_ids, attention_mask, index=None): #FORDOR not enough tokens
         tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
         new_batch = tokenizer(self.bert_tokenizer.batch_decode(input_ids)[0][6:-6])
-        masker_output = torch.sigmoid(self.masker(input_ids=torch.tensor(new_batch['input_ids'], dtype=torch.int, device=device).unsqueeze(0), attention_mask=torch.tensor(new_batch['attention_mask'], device=device, dtype=torch.int).unsqueeze(0)).logits)
+        input_ids = torch.tensor(new_batch['input_ids'], dtype=torch.int, device=device).unsqueeze(0)
+        attention_mask = torch.tensor(new_batch['attention_mask'], device=device, dtype=torch.int).unsqueeze(0)
+        masker_output = torch.sigmoid(self.masker(input_ids=input_ids, attention_mask=attention_mask).logits)
         # classifier_output = self.model(input_ids=input_ids, attention_mask=attention_mask)
-        return masker_output
+        return masker_output , input_ids, attention_mask
 

@@ -565,6 +565,10 @@ def main():
                 print(batch_start)
                 cam_target = method_expl[method](input_ids=input_ids, attention_mask=attention_masks, index=target_idx)[
                     0]
+                if len(cam_target) == 3:
+                    input_ids = cam_target[1]
+                    attention_masks = cam_target[2]
+                    cam_target = cam_target[0]
                 cam_target = cam_target.clamp(min=0)
                 # generate(text, cam_target,
                 #          (os.path.join(args.output_dir, '{0}/{1}_GT_{2}_{3}.tex').format(
