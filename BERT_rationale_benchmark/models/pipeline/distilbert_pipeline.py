@@ -14,7 +14,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import weight_map
-from transformers import BertTokenizer
+from transformers import BertTokenizer, AutoTokenizer
 from BERT_explainability.modules.BERT.ExplanationGenerator import Generator
 
 from BERT_rationale_benchmark.utils import (
@@ -45,7 +45,7 @@ torch.backends.cudnn.benchmark = False
 import numpy as np
 
 latex_special_token = ["!@#$%^&*()"]
-
+distilbert_tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 def generate(text_list, attention_list, latex_file, color='red', rescale_value=False):
     attention_list = attention_list[:len(text_list)]
@@ -569,6 +569,7 @@ def main():
                     input_ids = cam_target[1]
                     attention_masks = cam_target[2]
                     cam_target = cam_target[0]
+                    tokenizer = distilbert_tokenizer
                 cam_target = cam_target.clamp(min=0)
                 # generate(text, cam_target,
                 #          (os.path.join(args.output_dir, '{0}/{1}_GT_{2}_{3}.tex').format(
