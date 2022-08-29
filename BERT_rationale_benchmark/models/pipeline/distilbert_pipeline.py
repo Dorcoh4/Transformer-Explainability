@@ -566,9 +566,9 @@ def main():
                 cam_target = method_expl[method](input_ids=input_ids, attention_mask=attention_masks, index=target_idx)[
                     0]
                 cam_target = cam_target.clamp(min=0)
-                generate(text, cam_target,
-                         (os.path.join(args.output_dir, '{0}/{1}_GT_{2}_{3}.tex').format(
-                             method_folder[method], j, classification, is_classification_correct)))
+                # generate(text, cam_target,
+                #          (os.path.join(args.output_dir, '{0}/{1}_GT_{2}_{3}.tex').format(
+                #              method_folder[method], j, classification, is_classification_correct)))
                 if method in ["transformer_attribution", "partial_lrp", "attn_gradcam", "lrp"]:
                     cam_false_class = \
                     method_expl[method](input_ids=input_ids, attention_mask=attention_masks, index=1 - target_idx)[0]
