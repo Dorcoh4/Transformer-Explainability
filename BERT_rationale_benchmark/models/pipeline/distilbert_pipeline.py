@@ -446,17 +446,17 @@ def main():
         # explainability
         explanations = Generator(test_classifier, masker)
         explanations_orig_lrp = Generator(orig_lrp_classifier, masker)
-        method = "distibert"
+        method = "distilbert"
         method_folder = {"transformer_attribution": "ours", "partial_lrp": "partial_lrp", "last_attn": "last_attn",
                          "attn_gradcam": "attn_gradcam", "lrp": "lrp", "rollout": "rollout",
-                         "ground_truth": "ground_truth", "generate_all": "generate_all", "distibert" : "distibert"}
+                         "ground_truth": "ground_truth", "generate_all": "generate_all", "distilbert": "distilbert"}
         method_expl = {"transformer_attribution": explanations.generate_LRP,
                        "partial_lrp": explanations_orig_lrp.generate_LRP_last_layer,
                        "last_attn": explanations_orig_lrp.generate_attn_last_layer,
                        "attn_gradcam": explanations_orig_lrp.generate_attn_gradcam,
                        "lrp": explanations_orig_lrp.generate_full_lrp,
                        "rollout": explanations_orig_lrp.generate_rollout,
-                       "distibert": explanations.generate_distilbert_explanation}
+                       "distilbert": explanations.generate_distilbert_explanation}
 
         os.makedirs(os.path.join(args.output_dir, method_folder[method]), exist_ok=True)
 
