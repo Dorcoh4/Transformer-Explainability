@@ -167,5 +167,5 @@ class Generator:
         attention_mask = torch.tensor(new_batch['attention_mask'], device=device, dtype=torch.int).unsqueeze(0)
         masker_output = torch.sigmoid(self.masker(input_ids=input_ids, attention_mask=attention_mask).logits)
         # classifier_output = self.model(input_ids=input_ids, attention_mask=attention_mask)
-        return masker_output , input_ids, attention_mask
+        return masker_output.squeeze(), input_ids, attention_mask
 
