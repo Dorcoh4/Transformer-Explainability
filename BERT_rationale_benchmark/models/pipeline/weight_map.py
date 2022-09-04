@@ -277,7 +277,7 @@ def eval_batch(mask_model, input_ids, attention_mask, index=None):
 
 
 def load_masker(epoch):
-    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_lay.pt', map_location=device)
+    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_gt_lay.pt', map_location=device)
     mask_model.eval()
     return mask_model
 
