@@ -24,7 +24,7 @@ from captum.attr import (
     visualization
 )
 # import torchviz
-from BERT_rationale_benchmark.models.pipeline import distilbert_pipeline
+import distilbert_pipeline
 from BERT_rationale_benchmark.utils import load_documents, load_datasets
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
