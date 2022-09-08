@@ -9,6 +9,4 @@
 #SBATCH --gpus=1
 export HF_DATASETS_CACHE="/home/joberant/NLP_2122/dorcoh4/.cache/huggingface/datasets"
 export TRANSFORMERS_CACHE="/home/joberant/NLP_2122/dorcoh4/.cache/huggingface/"
-python weight_map.py --model_params BERT_params/movies_bert.json
-
-
+python BERT_rationale_benchmark/models/pipeline/weight_map.py --model_params BERT_params/movies_bert.json
