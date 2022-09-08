@@ -107,7 +107,7 @@ def train_classifier(train_dataset, eval_dataset):
 def load_classifier(model_params):
     # model = torch.load(directory + 'imdb_classifier.pt', map_location=device)
     with open(model_params, 'r') as fp:
-        print(f'Loading model parameters from {model_params.model_params}')
+        print(f'Loading model parameters from {model_params}')
         model_params = json.load(fp)
         print(f'Params: {json.dumps(model_params, indent=2, sort_keys=True)}')
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = \
