@@ -161,7 +161,7 @@ class Generator:
         return cam[:, 0]
 
     def generate_distilbert_explanation(self, input_ids, attention_mask, index=None): #FORDOR not enough tokens
-        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
         new_batch = tokenizer(self.bert_tokenizer.batch_decode(input_ids)[0][6:-6])
         input_ids = torch.tensor(new_batch['input_ids'], dtype=torch.int, device=device).unsqueeze(0)
         attention_mask = torch.tensor(new_batch['attention_mask'], device=device, dtype=torch.int).unsqueeze(0)

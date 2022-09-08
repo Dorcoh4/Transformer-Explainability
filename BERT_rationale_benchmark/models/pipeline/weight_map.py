@@ -1,3 +1,5 @@
+import argparse
+import json
 import sys
 from itertools import chain
 
@@ -22,15 +24,15 @@ from captum.attr import (
     visualization
 )
 # import torchviz
-
+from BERT_rationale_benchmark.models.pipeline import distilbert_pipeline
 from BERT_rationale_benchmark.utils import load_documents, load_datasets
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-directory = "/home/joberant/NLP_2122/dorcoh4/weight_map/"
-data_dir = "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
-# directory = "C:/Users/Dor_local/Downloads/"
-# data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies"
+# directory = "/home/joberant/NLP_2122/dorcoh4/weight_map/"
+# data_dir = "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
+directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
+data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
 
 def convert_dataset(raw_dataset, documents, name):
@@ -51,8 +53,9 @@ def convert_dataset(raw_dataset, documents, name):
     return dataset
 
 
-def tokenize_dataset(raw_dataset):
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+def tokenize_dataset(raw_dataset, tokenizer=None):
+    if tokenizer is None:
+        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
     def tokenize_function(examples):
         return tokenizer(examples["text"], padding="max_length", truncation=True)
@@ -69,7 +72,7 @@ def train_classifier(train_dataset, eval_dataset):
         predictions = np.argmax(logits, axis=-1)
         return metric.compute(predictions=predictions, references=labels)
 
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
     model.train()
 
     training_args = TrainingArguments("DAN",
@@ -101,13 +104,19 @@ def train_classifier(train_dataset, eval_dataset):
     return model
 
 
-def load_classifier():
+def load_classifier(model_params):
     # model = torch.load(directory + 'imdb_classifier.pt', map_location=device)
-    model.eval()
-    return model
+    with open(model_params, 'r') as fp:
+        print(f'Loading model parameters from {model_params.model_params}')
+        model_params = json.load(fp)
+        print(f'Params: {json.dumps(model_params, indent=2, sort_keys=True)}')
+    evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = \
+        distilbert_pipeline.initialize_models(model_params, batch_first=True)
+    evidence_classifier.eval()
+    return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer
 
 
-def train_masker(classifier, train_dataset):
+def train_masker(classifier, classify_tokenizer, train_dataset):
     train_dataset = train_dataset.remove_columns(["text"])
 
     # train_dataset = train_dataset.remove_columns(["label"])
@@ -116,7 +125,7 @@ def train_masker(classifier, train_dataset):
     batch_size = 4
     train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
 
-    mask_model = AutoModelForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=1)
+    mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1)
 
     optimizer = SGD(mask_model.parameters(), lr=5e-5, momentum=0.9)
 
@@ -163,7 +172,7 @@ def train_masker(classifier, train_dataset):
             original_probs = softmax(out1.logits)
             masked_probs = softmax(out2.logits)
 
-            ce_loss = crossEntropyLoss(out2.logits, masked_probs)
+            ce_loss = crossEntropyLoss(out2.logits, labels)
             mask_loss = torch.norm(mask, 1, dim=1).sum() / batch_size
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
@@ -184,14 +193,14 @@ def train_masker(classifier, train_dataset):
         print(f"total loss : {running_loss}", flush=True)
         print(f"Primary loss : {running_loss_ce}", flush=True)
         print(f"Regularization loss : {running_loss_mask}", flush=True)
-        torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_lay.pt')
+        torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_gt_lay_cls.pt')
 
     print('Finished Training')
     return mask_model
 
 
 def eval_eye(mask_model, classifier, eval_dataset, index):
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     eval_dataset = eval_dataset.remove_columns(["text"])
     # eval_dataset = eval_dataset.remove_columns(["label"])
     eval_dataset.set_format("torch")
@@ -238,7 +247,7 @@ def eval_batch(mask_model, input_ids, attention_mask, index=None):
     if index == None:
         #this is th lable
         index = np.argmax(output.cpu().data.numpy(), axis=-1)
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     for temp_batch in eval_dataloader:
         labels = temp_batch.pop('label', None)
         batch = {k: v.to(device) for k, v in temp_batch.items()}
@@ -277,12 +286,23 @@ def eval_batch(mask_model, input_ids, attention_mask, index=None):
 
 
 def load_masker(epoch):
-    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_gt_lay.pt', map_location=device)
+    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_gt_lay_cls.pt', map_location=device)
     mask_model.eval()
     return mask_model
 
 
 def main():
+    parser = argparse.ArgumentParser(description=""" FORDOR
+
+        """, formatter_class=argparse.RawTextHelpFormatter)
+    # parser.add_argument('--data_dir', dest='data_dir', required=True,
+    #                     help='Which directory contains a {train,val,test}.jsonl file?')
+    # parser.add_argument('--output_dir', dest='output_dir', required=True,
+    #                     help='Where shall we write intermediate models + final data to?')
+    parser.add_argument('--model_params', dest='model_params', required=True,
+                        help='JSoN file for loading arbitrary model parameters (e.g. optimizers, pre-saved files, etc.')
+    args = parser.parse_args()
+
     train, val, test = load_datasets(data_dir)
     docids = set(e.docid for e in
                  chain.from_iterable(chain.from_iterable(map(lambda ann: ann.evidences, chain(train, val, test)))))
@@ -294,9 +314,9 @@ def main():
     train_dataset = tokenize_dataset(train_dataset)
     val_dataset = tokenize_dataset(val_dataset)
     test_dataset = tokenize_dataset(test_dataset)
-    classifier = load_classifier()
-    masker = train_masker(classifier, train_dataset)
-    eval_eye(masker, classifier, val_dataset, "20_gt")
+    evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = load_classifier(args.model_params)
+    masker = train_masker(evidence_classifier, tokenizer, train_dataset)
+    # eval_eye(masker, evidence_classifier, tokenizer, val_dataset, "20_gt")
 
 
 def recursive_set_dropout(model, p=0):
