@@ -145,7 +145,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
         param.requires_grad = False
     for param in mask_model.bert.encoder.layer[11].parameters():
         param.requires_grad = True
-    for param in mask_model.bert.encoder.pooler.parameters():
+    for param in mask_model.bert.pooler.parameters():
         param.requires_grad = True
     mask_model.train()
     crossEntropyLoss = torch.nn.CrossEntropyLoss()
