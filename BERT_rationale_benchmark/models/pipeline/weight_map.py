@@ -143,9 +143,10 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
 
     for param in mask_model.bert.parameters():
         param.requires_grad = False
-    for param in mask_model.bert.transformer.layer[5].parameters():
+    for param in mask_model.bert.encoder.layer[11].parameters():
         param.requires_grad = True
-
+    for param in mask_model.bert.encoder.pooler.parameters():
+        param.requires_grad = True
     mask_model.train()
     crossEntropyLoss = torch.nn.CrossEntropyLoss()
     softmax = torch.nn.Softmax(dim=1)
