@@ -141,9 +141,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
     for param in classifier.parameters():
         param.requires_grad = False
 
-    for param in mask_model.distilbert.parameters():
+    for param in mask_model.bert.parameters():
         param.requires_grad = False
-    for param in mask_model.distilbert.transformer.layer[5].parameters():
+    for param in mask_model.bert.transformer.layer[5].parameters():
         param.requires_grad = True
 
     mask_model.train()
@@ -163,7 +163,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
             labels = batch.pop('label', None)
             g_out = mask_model(**batch)
             mask = sigmoid(g_out.logits)
-            masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
+            masked_in = classifier.bert.embeddings(batch['input_ids']) * mask
 
             out1 = classifier(**batch)
             batch.pop('input_ids', None)
