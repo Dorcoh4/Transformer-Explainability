@@ -411,7 +411,7 @@ def main():
     if os.path.exists(cache):
         print(f'Loading interned documents from {cache}')
         (interned_documents) = torch.load(cache)
-    annotations = annotations_from_jsonl(os.path.join(args.data_dir, args.split + '.jsonl'))
+    annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'val' + '.jsonl'))
     masker = train_masker(evidence_classifier, tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations)
     # eval_eye(masker, evidence_classifier, tokenizer, val_dataset, "20_gt")
 
