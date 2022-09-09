@@ -587,8 +587,8 @@ def main():
                 cam = scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[0], cam)
                 j = j + 1
                 doc_name = extract_docid_from_dataset_element(s)
-                hard_rationales = []
                 for res, i in enumerate(range(5, 85, 5)):
+                    hard_rationales = []
                     print("calculating top ", i)
                     _, indices = cam.topk(k=i)
                     for index in indices.tolist():
