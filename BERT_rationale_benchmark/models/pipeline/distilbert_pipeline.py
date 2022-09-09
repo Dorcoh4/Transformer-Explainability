@@ -33,6 +33,8 @@ from transformers import BertForSequenceClassification
 
 from collections import OrderedDict
 
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
 logging.basicConfig(level=logging.DEBUG, format='%(relativeCreated)6d %(threadName)s %(message)s')
 logger = logging.getLogger(__name__)
 # let's make this more or less deterministic (not resistent to restarts)
@@ -318,7 +320,7 @@ def main():
     epoch_data = {}
     if os.path.exists(epoch_save_file):
         logging.info(f'Restoring model from {model_save_file}')
-        evidence_classifier.load_state_dict(torch.load(model_save_file))
+        evidence_classifier.load_state_dict(torch.load(model_save_file, map_location=device))
         epoch_data = torch.load(epoch_save_file)
         start_epoch = epoch_data['epoch'] + 1
         # handle finishing because patience was exceeded or we didn't get the best final epoch
@@ -435,8 +437,8 @@ def main():
                                                             num_labels=len(evidence_classes)).to(device)
     if os.path.exists(epoch_save_file):
         logging.info(f'Restoring model from {model_save_file}')
-        test_classifier.load_state_dict(torch.load(model_save_file))
-        orig_lrp_classifier.load_state_dict(torch.load(model_save_file))
+        test_classifier.load_state_dict(torch.load(model_save_file, map_location=device))
+        orig_lrp_classifier.load_state_dict(torch.load(model_save_file, map_location=device))
         test_classifier.eval()
         orig_lrp_classifier.eval()
         test_batch_size = 1
