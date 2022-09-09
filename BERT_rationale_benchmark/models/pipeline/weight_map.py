@@ -216,6 +216,8 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     return mask_model
 
 def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations):
+    global best_validation_score
+    global best_validation_epoch
     test_batch_size = 1
     results = []
     mask_model.eval()
@@ -257,7 +259,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
             cam = distilbert_pipeline.scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[0], cam)
             j = j + 1
             doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
-            for res, i in [80]:
+            for i in [80]:
                 hard_rationales = []
                 print("calculating top ", i)
                 _, indices = cam.topk(k=i)
