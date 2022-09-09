@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 from itertools import chain
 
@@ -25,7 +26,9 @@ from captum.attr import (
 )
 # import torchviz
 import distilbert_pipeline
-from BERT_rationale_benchmark.utils import load_documents, load_datasets
+from BERT_rationale_benchmark.utils import load_documents, load_datasets, annotations_from_jsonl
+from BERT_rationale_benchmark.metrics import score_hard_rationale_predictions, Rationale
+from BERT_explainability.modules.BERT.ExplanationGenerator import Generator
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -34,6 +37,9 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
+
+best_validation_score = 0
+best_validation_epoch = 0
 
 def convert_dataset(raw_dataset, documents, name):
     texts = []
@@ -116,7 +122,7 @@ def load_classifier(model_params):
     return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer
 
 
-def train_masker(classifier, classify_tokenizer, train_dataset):
+def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents):
     train_dataset = train_dataset.remove_columns(["text"])
 
     # train_dataset = train_dataset.remove_columns(["label"])
@@ -204,10 +210,85 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
         print(f"Primary loss : {running_loss_ce}", flush=True)
         print(f"Regularization loss : {running_loss_mask}", flush=True)
         torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_lay_cls2.pt')
+        epoch_validation(epoch, mask_model, classifier, classify_tokenizer,  val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations)
 
     print('Finished Training')
     return mask_model
 
+def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations):
+    test_batch_size = 1
+    results = []
+    mask_model.eval()
+    explanations = Generator(classifier, mask_model, tokenizer)
+
+    j = 0
+    for batch_start in range(0, len(val), test_batch_size):
+        batch_elements = val[0:min(0 + test_batch_size, len(val))]
+        val = val[test_batch_size:]
+        targets = [evidence_classes[s.classification] for s in batch_elements]
+        targets = torch.tensor(targets, dtype=torch.long, device=device)
+        samples_encoding = [interned_documents[distilbert_pipeline.extract_docid_from_dataset_element(s)] for s in batch_elements]
+        input_ids = torch.stack(
+            [samples_encoding[i]['input_ids'] for i in range(len(samples_encoding))]).squeeze(1).to(device)
+        attention_masks = torch.stack(
+            [samples_encoding[i]['attention_mask'] for i in range(len(samples_encoding))]).squeeze(1).to(
+            device)
+        preds = classifier(input_ids=input_ids, attention_mask=attention_masks)[0]
+        for s in batch_elements:
+            doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
+            inp = documents[doc_name].split()
+            classification = "neg" if targets.item() == 0 else "pos"
+            is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+            text = tokenizer.convert_ids_to_tokens(input_ids[0])
+            classification = "neg" if targets.item() == 0 else "pos"
+            is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+            target_idx = targets.item()
+            print("FORDOR")
+            print(batch_start)
+            cam_target = explanations.generate_distilbert_explanation(input_ids=input_ids, attention_mask=attention_masks, index=target_idx)[
+                0]
+            if len(cam_target) == 3:
+                input_ids = cam_target[1]
+                attention_masks = cam_target[2]
+                cam_target = cam_target[0]
+                # tokenizer = distilbert_tokenizer
+            cam_target = cam_target.clamp(min=0)
+            cam = cam_target
+            cam = distilbert_pipeline.scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[0], cam)
+            j = j + 1
+            doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
+            for res, i in [80]:
+                hard_rationales = []
+                print("calculating top ", i)
+                _, indices = cam.topk(k=i)
+                for index in indices.tolist():
+                    hard_rationales.append({
+                        "start_token": index,
+                        "end_token": index + 1
+                    })
+                result_dict = {
+                    "annotation_id": doc_name,
+                    "rationales": [{
+                        "docid": doc_name,
+                        "hard_rationale_predictions": hard_rationales
+                    }],
+                }
+                results.append(result_dict)
+                # result_files[res].write(json.dumps(result_dict) + "\n")
+    truth = list(chain.from_iterable(Rationale.from_annotation(ann) for ann in annotations))
+    pred = list(chain.from_iterable(Rationale.from_instance(inst) for inst in results))
+    token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
+    token_level_pred = list(chain.from_iterable(rat.to_token_level() for rat in pred))
+    token_level_prf = score_hard_rationale_predictions(token_level_truth, token_level_pred)
+    value = token_level_prf['f1']
+    if value > best_validation_score:
+        best_validation_score = value
+        best_validation_epoch = epoch
+    print(f"epoch {epoch} validation score: {value}")
+    print(f"BEST epoch {best_validation_epoch} BEST score: {best_validation_score}")
+
+
+    mask_model.test()
 
 def eval_eye(mask_model, classifier, eval_dataset, index):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
@@ -253,46 +334,46 @@ def eval_eye(mask_model, classifier, eval_dataset, index):
             if k > 10:
                 break
 
-def eval_batch(mask_model, input_ids, attention_mask, index=None):
-    if index == None:
-        #this is th lable
-        index = np.argmax(output.cpu().data.numpy(), axis=-1)
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-    for temp_batch in eval_dataloader:
-        labels = temp_batch.pop('label', None)
-        batch = {k: v.to(device) for k, v in temp_batch.items()}
-        masker_output = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_mask).logits)
-        classifier_output = classifier(**batch)
-
-        for j in range(len(masker_output)):
-            tokens = tokenizer.batch_decode(batch['input_ids'][j].unsqueeze(1))
-            x = masker_output[j]
-            expl = [x[i].item() for i in range(len(x))]
-            # expl = [0 if x < max(expl) / 10 else x / max(expl) for x in expl]
-            # print(classifier_output.logits.shape)
-            classification = classifier_output.logits[j].argmax(dim=-1).item()
-            print(j)
-            true_class = labels[j]
-            # print(list(zip(orig, x2)))
-            vis_data_records = [visualization.VisualizationDataRecord(
-                expl,
-                classifier_output.logits[j][classification],
-                classification,
-                true_class,
-                true_class,
-                1,
-                tokens,
-                1)]
-            html_obj = visualization.visualize_text(vis_data_records)
-            # print(html_obj)
-            # print(html_obj.data)
-            outfile.write(html_obj.data + "\n")
-            # print(tokenizer.batch_decode(batch['input_ids']))
-        # tokens = tokenizer.convert_ids_to_tokens(input_ids.flatten())
-        # print([(tokens[i], expl[i]) for i in range(len(tokens))])
-        k = k + 1
-        if k > 10:
-            break
+# def eval_batch(mask_model, input_ids, attention_mask, index=None):
+#     if index == None:
+#         #this is th lable
+#         index = np.argmax(output.cpu().data.numpy(), axis=-1)
+#     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+#     for temp_batch in eval_dataloader:
+#         labels = temp_batch.pop('label', None)
+#         batch = {k: v.to(device) for k, v in temp_batch.items()}
+#         masker_output = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_mask).logits)
+#         classifier_output = classifier(**batch)
+#
+#         for j in range(len(masker_output)):
+#             tokens = tokenizer.batch_decode(batch['input_ids'][j].unsqueeze(1))
+#             x = masker_output[j]
+#             expl = [x[i].item() for i in range(len(x))]
+#             # expl = [0 if x < max(expl) / 10 else x / max(expl) for x in expl]
+#             # print(classifier_output.logits.shape)
+#             classification = classifier_output.logits[j].argmax(dim=-1).item()
+#             print(j)
+#             true_class = labels[j]
+#             # print(list(zip(orig, x2)))
+#             vis_data_records = [visualization.VisualizationDataRecord(
+#                 expl,
+#                 classifier_output.logits[j][classification],
+#                 classification,
+#                 true_class,
+#                 true_class,
+#                 1,
+#                 tokens,
+#                 1)]
+#             html_obj = visualization.visualize_text(vis_data_records)
+#             # print(html_obj)
+#             # print(html_obj.data)
+#             outfile.write(html_obj.data + "\n")
+#             # print(tokenizer.batch_decode(batch['input_ids']))
+#         # tokens = tokenizer.convert_ids_to_tokens(input_ids.flatten())
+#         # print([(tokens[i], expl[i]) for i in range(len(tokens))])
+#         k = k + 1
+#         if k > 10:
+#             break
 
 
 def load_masker(epoch):
@@ -305,12 +386,13 @@ def main():
     parser = argparse.ArgumentParser(description=""" FORDOR
 
         """, formatter_class=argparse.RawTextHelpFormatter)
-    # parser.add_argument('--data_dir', dest='data_dir', required=True,
-    #                     help='Which directory contains a {train,val,test}.jsonl file?')
-    # parser.add_argument('--output_dir', dest='output_dir', required=True,
-    #                     help='Where shall we write intermediate models + final data to?')
+    parser.add_argument('--data_dir', dest='data_dir', required=True,
+                        help='Which directory contains a {train,val,test}.jsonl file?')
+    parser.add_argument('--output_dir', dest='output_dir', required=True,
+                        help='Where shall we write intermediate models + final data to?')
     parser.add_argument('--model_params', dest='model_params', required=True,
                         help='JSoN file for loading arbitrary model parameters (e.g. optimizers, pre-saved files, etc.')
+
     args = parser.parse_args()
 
     train, val, test = load_datasets(data_dir)
@@ -325,7 +407,12 @@ def main():
     val_dataset = tokenize_dataset(val_dataset)
     test_dataset = tokenize_dataset(test_dataset)
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = load_classifier(args.model_params)
-    masker = train_masker(evidence_classifier, tokenizer, train_dataset)
+    cache = os.path.join(args.output_dir, 'preprocessed.pkl')
+    if os.path.exists(cache):
+        print(f'Loading interned documents from {cache}')
+        (interned_documents) = torch.load(cache)
+    annotations = annotations_from_jsonl(os.path.join(args.data_dir, args.split + '.jsonl'))
+    masker = train_masker(evidence_classifier, tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations)
     # eval_eye(masker, evidence_classifier, tokenizer, val_dataset, "20_gt")
 
 
