@@ -122,7 +122,7 @@ def load_classifier(model_params):
     return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer
 
 
-def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents):
+def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations):
     train_dataset = train_dataset.remove_columns(["text"])
 
     # train_dataset = train_dataset.remove_columns(["label"])
