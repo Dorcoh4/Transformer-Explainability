@@ -166,7 +166,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
             mask = sigmoid(g_out.logits)
             attention_mask = batch['attention_mask']
             unrelated_tokens = attention_mask.detach().clone()
-            sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) for r in range(len(attention_mask))]
+            sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
             unrelated_tokens[:, 0] = 0
             for row in range(len(unrelated_tokens)):
                 unrelated_tokens[row][sep_locs[row]] = 0
