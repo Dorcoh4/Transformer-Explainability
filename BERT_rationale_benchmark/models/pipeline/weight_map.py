@@ -180,9 +180,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
             batch['inputs_embeds'] = masked_in
             out2 = classifier(**batch)
             original_probs = softmax(out1.logits)
-            masked_probs = softmax(out2.logits)
+            # masked_probs = softmax(out2.logits)
 
-            ce_loss = crossEntropyLoss(out2.logits, labels)
+            ce_loss = crossEntropyLoss(out2.logits, original_probs)
             mask_loss = torch.norm(mask, 1, dim=1).sum() / batch_size
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
@@ -203,7 +203,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
         print(f"total loss : {running_loss}", flush=True)
         print(f"Primary loss : {running_loss_ce}", flush=True)
         print(f"Regularization loss : {running_loss_mask}", flush=True)
-        torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_gt_lay_cls2.pt')
+        torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_lay_cls2.pt')
 
     print('Finished Training')
     return mask_model
@@ -296,7 +296,7 @@ def eval_batch(mask_model, input_ids, attention_mask, index=None):
 
 
 def load_masker(epoch):
-    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_gt_lay_cls2.pt', map_location=device)
+    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_lay_cls2.pt', map_location=device)
     mask_model.eval()
     return mask_model
 

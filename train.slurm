@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=bert-mask2
-#SBATCH --output=mask2.out
-#SBATCH --error=mask2.err
+#SBATCH --job-name=bert-mask3
+#SBATCH --output=mask3.out
+#SBATCH --error=mask3.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=2500
 #SBATCH --nodes=1
