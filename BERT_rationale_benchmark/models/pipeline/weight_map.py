@@ -282,7 +282,8 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
     token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
     token_level_pred = list(chain.from_iterable(rat.to_token_level() for rat in pred))
     token_level_prf = score_hard_rationale_predictions(token_level_truth, token_level_pred)
-    value = token_level_prf['f1']
+    print(token_level_prf)
+    value = token_level_prf['instance_macro']['f1']
     if value > best_validation_score:
         best_validation_score = value
         best_validation_epoch = epoch
