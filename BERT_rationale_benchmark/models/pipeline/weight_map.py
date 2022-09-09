@@ -194,7 +194,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset):
         print(f"total loss : {running_loss}", flush=True)
         print(f"Primary loss : {running_loss_ce}", flush=True)
         print(f"Regularization loss : {running_loss_mask}", flush=True)
-        torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_gt_lay_cls2.pt')
+        torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_gt_lay_cls.pt')
 
     print('Finished Training')
     return mask_model
@@ -287,7 +287,7 @@ def eval_batch(mask_model, input_ids, attention_mask, index=None):
 
 
 def load_masker(epoch):
-    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_gt_lay_cls2.pt', map_location=device)
+    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_gt_lay_cls.pt', map_location=device)
     mask_model.eval()
     return mask_model
 
