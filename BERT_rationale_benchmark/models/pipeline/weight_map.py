@@ -14,7 +14,7 @@ from transformers import Trainer
 from transformers import TrainingArguments
 from torch.utils.data import DataLoader
 from transformers import AutoModelForTokenClassification
-from torch.optim import SGD
+from torch.optim import AdamW
 # import pyarrow as pa
 # import pyarrow.parquet as pq
 # import pyarrow.dataset as ds
@@ -37,6 +37,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
+suffix = "_gt_aw"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -133,9 +134,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1)
 
-    optimizer = SGD(mask_model.parameters(), lr=5e-4, momentum=0.9)
+    optimizer = AdamW(mask_model.parameters(), lr=5e-5)
 
-    num_epochs = 200
+    num_epochs = 100
     num_training_steps = num_epochs * len(train_dataloader)
     lr_scheduler = get_scheduler(
         name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
@@ -181,14 +182,14 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             mask = mask * unrelated_tokens + ~(unrelated_tokens.bool())
             masked_in = classifier.bert.embeddings(batch['input_ids']) * mask
 
-            out1 = classifier(**batch)
+            # out1 = classifier(**batch)
             batch.pop('input_ids', None)
             batch['inputs_embeds'] = masked_in
             out2 = classifier(**batch)
-            original_probs = softmax(out1.logits)
+            # original_probs = softmax(out1.logits)
             # masked_probs = softmax(out2.logits)
 
-            ce_loss = crossEntropyLoss(out2.logits, original_probs)
+            ce_loss = crossEntropyLoss(out2.logits, labels)
             mask_loss = torch.norm(mask, 1, dim=1).sum() / batch_size
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
@@ -209,7 +210,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
         print(f"total loss : {running_loss}", flush=True)
         print(f"Primary loss : {running_loss_ce}", flush=True)
         print(f"Regularization loss : {running_loss_mask}", flush=True)
-        torch.save(mask_model, f'{directory}imdb_masker-{epoch}_001_lay_cls2.pt')
+        torch.save(mask_model, f'{directory}imdb_masker-{epoch}{suffix}.pt')
         epoch_validation(epoch, mask_model, classifier, classify_tokenizer,  val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations)
 
     print('Finished Training')
@@ -378,7 +379,7 @@ def eval_eye(mask_model, classifier, eval_dataset, index):
 
 
 def load_masker(epoch):
-    mask_model = torch.load(f'{directory}imdb_masker-{epoch}_001_lay_cls2.pt', map_location=device)
+    mask_model = torch.load(f'{directory}imdb_masker-{epoch}{suffix}.pt', map_location=device)
     mask_model.eval()
     return mask_model
 
