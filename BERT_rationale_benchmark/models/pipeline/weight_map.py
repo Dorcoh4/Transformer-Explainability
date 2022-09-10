@@ -37,7 +37,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_gt_aw_imdb-classifier"
+suffix = "_gt_aw"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -84,7 +84,7 @@ def train_classifier(train_dataset, eval_dataset):
 
     training_args = TrainingArguments("DAN",
                                       # YOUR CODE HERE
-                                      num_train_epochs=6,
+                                      num_train_epochs=4,  # must be at least 10.
                                       per_device_train_batch_size=8,
                                       per_device_eval_batch_size=8,
                                       learning_rate=0.00005,
@@ -105,7 +105,7 @@ def train_classifier(train_dataset, eval_dataset):
 
     trainer.train()
 
-    torch.save(model, directory + 'imdb_bert_classifier.pt')
+    torch.save(model, directory + 'imdb_classifier.pt')
     print("classifier trained")
 
     return model
@@ -397,11 +397,6 @@ def main():
 
     args = parser.parse_args()
 
-    classifier_dataset = load_dataset("imdb")
-
-    classifier_train = tokenize_dataset(classifier_dataset['train'])
-    classifier_test = tokenize_dataset(classifier_dataset['test'])
-
     train, val, test = load_datasets(data_dir)
     docids = set(e.docid for e in
                  chain.from_iterable(chain.from_iterable(map(lambda ann: ann.evidences, chain(train, val, test)))))
@@ -414,7 +409,6 @@ def main():
     val_dataset = tokenize_dataset(val_dataset)
     test_dataset = tokenize_dataset(test_dataset)
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = load_classifier(args.model_params)
-    evidence_classifier = train_classifier(classifier_train, classifier_test)
     cache = os.path.join(args.output_dir, 'preprocessed.pkl')
     if os.path.exists(cache):
         print(f'Loading interned documents from {cache}')
