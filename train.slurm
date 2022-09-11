@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=bert-maskaw
-#SBATCH --output=mask_aw.out
-#SBATCH --error=mask_aw.err
+#SBATCH --job-name=bert-maskaw3
+#SBATCH --output=mask_aw3.out
+#SBATCH --error=mask_aw3.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=3500
 #SBATCH --nodes=1
