@@ -37,20 +37,23 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_001_gt_lay"
+suffix = "_001_gt_lay_more_data"
 
 best_validation_score = 0
 best_validation_epoch = 0
 
-def convert_dataset(raw_dataset, documents, name):
+def convert_dataset(raw_dataset, documents, name, imdb_data=None):
     texts = []
     labels = []
     for line in raw_dataset:
         if line.annotation_id in documents:  # FORDOR this if
-            sentence_list = [" ".join(sent) for sent in documents[line.annotation_id]]
-            texts.append("\n".join(sentence_list))
+            # sentence_list = [" ".join(sent) for sent in documents[line.annotation_id]]
+            # texts.append("\n".join(sentence_list))
+            texts.append(documents[line.annotation_id])
             labels.append(0 if line.classification.upper() == 'NEG' else 1)
-
+    if imdb_data is not None:
+        texts += imdb_data['text']
+        labels += imdb_data['label']
     # file_name = f"eraser_movies_{name}.parquet"
     # table = pa.table({'text': texts,
     #                   'label': labels,})
@@ -401,13 +404,16 @@ def main():
     docids = set(e.docid for e in
                  chain.from_iterable(chain.from_iterable(map(lambda ann: ann.evidences, chain(train, val, test)))))
     documents = load_documents(data_dir, docids)
-    train_dataset = convert_dataset(train, documents, "train")
+    imdb_data = load_dataset("imdb")
+    print(f"IMDB dataset - train:{len(imdb_data['train'])}, test:{imdb_data['test']}")
+    train_dataset = convert_dataset(train, documents, "train", imdb_data['train'])
     val_dataset = convert_dataset(val, documents, "validation")
     test_dataset = convert_dataset(test, documents, "test")
 
     train_dataset = tokenize_dataset(train_dataset)
-    val_dataset = tokenize_dataset(val_dataset)
-    test_dataset = tokenize_dataset(test_dataset)
+    # val_dataset = tokenize_dataset(val_dataset)
+    # test_dataset = tokenize_dataset(test_dataset)
+
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = load_classifier(args.model_params)
     cache = os.path.join(args.output_dir, 'preprocessed.pkl')
     if os.path.exists(cache):
