@@ -62,7 +62,7 @@ def convert_dataset(raw_dataset, documents, name):
 
 def tokenize_dataset(raw_dataset, tokenizer=None):
     if tokenizer is None:
-        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
     def tokenize_function(examples):
         return tokenizer(examples["text"], padding="max_length", truncation=True)
@@ -79,7 +79,7 @@ def train_classifier(train_dataset, eval_dataset):
         predictions = np.argmax(logits, axis=-1)
         return metric.compute(predictions=predictions, references=labels)
 
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
     model.train()
 
     training_args = TrainingArguments("DAN",
@@ -132,7 +132,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     batch_size = 4
     train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
 
-    mask_model = AutoModelForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=1)
+    mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1)
 
     optimizer = AdamW(mask_model.parameters(), lr=5e-5)
 
@@ -148,9 +148,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     for param in classifier.parameters():
         param.requires_grad = False
 
-    for param in mask_model.distilbert.parameters():
+    for param in mask_model.bert.parameters():
         param.requires_grad = False
-    for param in mask_model.distilbert.transformer.layer[5].parameters():
+    for param in mask_model.bert.encoder.layer[11].parameters():
         param.requires_grad = True
     # for param in mask_model.bert.pooler.parameters(): FORDOR
     #     param.requires_grad = True
@@ -180,7 +180,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             # unrelated_tokens[:,sep_locs] = 0
             unrelated_tokens = unrelated_tokens.unsqueeze(2)
             mask = mask * unrelated_tokens + ~(unrelated_tokens.bool())
-            masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
+            masked_in = classifier.bert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
             batch.pop('input_ids', None)
