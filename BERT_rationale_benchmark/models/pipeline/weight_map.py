@@ -37,7 +37,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_gt_aw"
+suffix = "_gt_aw_all"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -148,10 +148,10 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     for param in classifier.parameters():
         param.requires_grad = False
 
-    for param in mask_model.bert.parameters():
-        param.requires_grad = False
-    for param in mask_model.bert.encoder.layer[11].parameters():
-        param.requires_grad = True
+    # for param in mask_model.bert.parameters():
+    #     param.requires_grad = False
+    # for param in mask_model.bert.encoder.layer[11].parameters():
+    #     param.requires_grad = True
     # for param in mask_model.bert.pooler.parameters(): FORDOR
     #     param.requires_grad = True
     mask_model.train()
