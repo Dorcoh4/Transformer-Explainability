@@ -112,7 +112,7 @@ def train_classifier(train_dataset, eval_dataset):
 
 
 def load_classifier(model_params):
-    model = torch.load(directory + 'imdb_classifier.pt', map_location=device)
+    # model = torch.load(directory + 'imdb_classifier.pt', map_location=device)
     with open(model_params, 'r') as fp:
         print(f'Loading model parameters from {model_params}')
         model_params = json.load(fp)
@@ -120,10 +120,10 @@ def load_classifier(model_params):
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = \
         distilbert_pipeline.initialize_models(model_params, batch_first=True)
     evidence_classifier.eval()
-    return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer , model
+    return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer
 
 
-def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations, imdb_classifier):
+def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations):
     train_dataset = train_dataset.remove_columns(["text"])
 
     # train_dataset = train_dataset.remove_columns(["label"])
@@ -141,16 +141,11 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     lr_scheduler = get_scheduler(
         name="linear", optimizer=optimizer, num_warmup_steps=0, num_training_steps=num_training_steps
     )
-    imdb_classifier.to(device)
-    imdb_classifier.eval()
     classifier.to(device)
     mask_model.to(device)
 
     classifier.eval()
     for param in classifier.parameters():
-        param.requires_grad = False
-
-    for param in imdb_classifier.parameters():
         param.requires_grad = False
 
     for param in mask_model.distilbert.parameters():
@@ -185,12 +180,12 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             # unrelated_tokens[:,sep_locs] = 0
             unrelated_tokens = unrelated_tokens.unsqueeze(2)
             mask = mask * unrelated_tokens + ~(unrelated_tokens.bool())
-            masked_in = imdb_classifier.distilbert.embeddings(batch['input_ids']) * mask
+            masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
             batch.pop('input_ids', None)
             batch['inputs_embeds'] = masked_in
-            out2 = imdb_classifier(**batch)
+            out2 = classifier(**batch)
             # original_probs = softmax(out1.logits)
             # masked_probs = softmax(out2.logits)
 
@@ -413,13 +408,13 @@ def main():
     train_dataset = tokenize_dataset(train_dataset)
     val_dataset = tokenize_dataset(val_dataset)
     test_dataset = tokenize_dataset(test_dataset)
-    evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer, imdb_classifier = load_classifier(args.model_params)
+    evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = load_classifier(args.model_params)
     cache = os.path.join(args.output_dir, 'preprocessed.pkl')
     if os.path.exists(cache):
         print(f'Loading interned documents from {cache}')
         (interned_documents) = torch.load(cache)
     annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'val' + '.jsonl'))
-    masker = train_masker(evidence_classifier, tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations, imdb_classifier)
+    masker = train_masker(evidence_classifier, tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations)
     # eval_eye(masker, evidence_classifier, tokenizer, val_dataset, "20_gt")
 
 
