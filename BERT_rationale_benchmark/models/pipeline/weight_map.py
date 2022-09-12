@@ -51,9 +51,9 @@ def convert_dataset(raw_dataset, documents, name, imdb_data=None):
             # texts.append("\n".join(sentence_list))
             texts.append(documents[line.annotation_id])
             labels.append(0 if line.classification.upper() == 'NEG' else 1)
-    # if imdb_data is not None:
-    #     texts += imdb_data['text']
-    #     labels += imdb_data['label']
+    if imdb_data is not None:
+        texts += imdb_data['text']
+        labels += imdb_data['label']
     # file_name = f"eraser_movies_{name}.parquet"
     # table = pa.table({'text': texts,
     #                   'label': labels,})
