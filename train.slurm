@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=bert-mask_yes
-#SBATCH --output=mask_yes.out
-#SBATCH --error=mask_yes.err
+#SBATCH --job-name=bert-mask_short
+#SBATCH --output=mask_short.out
+#SBATCH --error=mask_short.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=3500
 #SBATCH --nodes=1
