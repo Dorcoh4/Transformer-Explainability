@@ -15,6 +15,7 @@ from transformers import TrainingArguments
 from torch.utils.data import DataLoader
 from transformers import AutoModelForTokenClassification
 from torch.optim import AdamW
+from torch.optim import SGD
 # import pyarrow as pa
 # import pyarrow.parquet as pq
 # import pyarrow.dataset as ds
@@ -37,7 +38,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_faster"
+suffix = "_retro"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -82,7 +83,7 @@ def train_classifier(train_dataset, eval_dataset):
         predictions = np.argmax(logits, axis=-1)
         return metric.compute(predictions=predictions, references=labels)
 
-    model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
     model.train()
 
     training_args = TrainingArguments("DAN",
@@ -115,7 +116,7 @@ def train_classifier(train_dataset, eval_dataset):
 
 
 def load_classifier(model_params):
-    # model = torch.load(directory + 'imdb_classifier.pt', map_location=device)
+    model = torch.load(directory + 'imdb_classifier.pt', map_location=device)
     with open(model_params, 'r') as fp:
         print(f'Loading model parameters from {model_params}')
         model_params = json.load(fp)
@@ -123,7 +124,7 @@ def load_classifier(model_params):
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = \
         distilbert_pipeline.initialize_models(model_params, batch_first=True)
     evidence_classifier.eval()
-    return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer
+    return model, word_interner, de_interner, evidence_classes, tokenizer
 
 
 def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations):
@@ -135,9 +136,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     batch_size = 4
     train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
 
-    mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1)
+    mask_model = AutoModelForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=1)
 
-    optimizer = AdamW(mask_model.parameters(), lr=5e-5)
+    optimizer = SGD(mask_model.parameters(), lr=5e-5, momentum=0.9)
 
     num_epochs = 100
     num_training_steps = num_epochs * len(train_dataloader)
@@ -151,12 +152,11 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     for param in classifier.parameters():
         param.requires_grad = False
 
-    # for param in mask_model.bert.parameters():
-    #     param.requires_grad = False
-    # for param in mask_model.bert.encoder.layer[11].parameters():
-    #     param.requires_grad = True
-    # for param in mask_model.bert.pooler.parameters(): FORDOR
-    #     param.requires_grad = True
+    for param in mask_model.distilbert.parameters():
+        param.requires_grad = False
+    for param in mask_model.distilbert.transformer.layer[5].parameters():
+        param.requires_grad = True
+
     mask_model.train()
     crossEntropyLoss = torch.nn.CrossEntropyLoss()
     softmax = torch.nn.Softmax(dim=1)
@@ -185,7 +185,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             unrelated_tokens = unrelated_tokens.unsqueeze(2)
             relevant_mask = mask * unrelated_tokens
             mask = relevant_mask + ~(unrelated_tokens.bool())
-            masked_in = classifier.bert.embeddings(batch['input_ids']) * mask
+            masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
             batch.pop('input_ids', None)
@@ -298,7 +298,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
     mask_model.train()
 
 def eval_eye(mask_model, classifier, eval_dataset, index):
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     eval_dataset = eval_dataset.remove_columns(["text"])
     # eval_dataset = eval_dataset.remove_columns(["label"])
     eval_dataset.set_format("torch")
@@ -408,11 +408,11 @@ def main():
     documents = load_documents(data_dir, docids)
     imdb_data = load_dataset("imdb")
     print(f"IMDB dataset - train:{len(imdb_data['train'])}, test:{imdb_data['test']}")
-    train_dataset = convert_dataset(train, documents, "train", imdb_data['train'])
-    val_dataset = convert_dataset(val, documents, "validation")
-    test_dataset = convert_dataset(test, documents, "test")
+    # train_dataset = convert_dataset(train, documents, "train", imdb_data['train'])
+    # val_dataset = convert_dataset(val, documents, "validation")
+    # test_dataset = convert_dataset(test, documents, "test")
 
-    train_dataset = tokenize_dataset(train_dataset)
+    train_dataset = tokenize_dataset(imdb_data['train'])
     # val_dataset = tokenize_dataset(val_dataset)
     # test_dataset = tokenize_dataset(test_dataset)
 
