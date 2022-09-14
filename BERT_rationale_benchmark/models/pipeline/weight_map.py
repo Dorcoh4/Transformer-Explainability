@@ -10,7 +10,7 @@ from transformers import AutoTokenizer
 from datasets import load_metric
 import torch
 from transformers import AutoModelForSequenceClassification
-from transformers import Trainer
+# from transformers import Trainer
 from transformers import TrainingArguments
 from torch.utils.data import DataLoader
 from transformers import AutoModelForTokenClassification
@@ -98,19 +98,19 @@ def train_classifier(train_dataset, eval_dataset):
                                       log_level="error",
                                       evaluation_strategy="epoch")
 
-    trainer = Trainer(
-        model=model,
-        # data_collator=co,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        compute_metrics=compute_metrics,
-    )
-
-    trainer.train()
-
-    torch.save(model, directory + 'imdb_classifier.pt')
-    print("classifier trained")
+    # trainer = Trainer(
+    #     model=model,
+    #     # data_collator=co,
+    #     args=training_args,
+    #     train_dataset=train_dataset,
+    #     eval_dataset=eval_dataset,
+    #     compute_metrics=compute_metrics,
+    # )
+    #
+    # trainer.train()
+    #
+    # torch.save(model, directory + 'imdb_classifier.pt')
+    # print("classifier trained")
 
     return model
 
