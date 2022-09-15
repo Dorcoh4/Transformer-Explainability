@@ -38,7 +38,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_retro_bert"
+suffix = "_retro_adamw"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -140,7 +140,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     mask_model = AutoModelForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=1)
 
-    optimizer = SGD(mask_model.parameters(), lr=5e-5, momentum=0.9)
+    optimizer = AdamW(mask_model.parameters(), lr=5e-5)
 
     num_epochs = 100
     num_training_steps = num_epochs * len(train_dataloader)
