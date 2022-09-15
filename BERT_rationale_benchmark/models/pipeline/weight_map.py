@@ -11,7 +11,7 @@ from datasets import load_metric
 import torch
 from transformers import AutoModelForSequenceClassification
 # from transformers import Trainer
-from transformers import TrainingArguments
+# from transformers import TrainingArguments
 from torch.utils.data import DataLoader
 from transformers import AutoModelForTokenClassification
 from torch.optim import AdamW
@@ -86,17 +86,17 @@ def train_classifier(train_dataset, eval_dataset):
     model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
     model.train()
 
-    training_args = TrainingArguments("DAN",
-                                      # YOUR CODE HERE
-                                      num_train_epochs=4,  # must be at least 10.
-                                      per_device_train_batch_size=8,
-                                      per_device_eval_batch_size=8,
-                                      learning_rate=0.00005,
-                                      # END YOUR END
-
-                                      save_total_limit=2,
-                                      log_level="error",
-                                      evaluation_strategy="epoch")
+    # training_args = TrainingArguments("DAN",
+    #                                   # YOUR CODE HERE
+    #                                   num_train_epochs=4,  # must be at least 10.
+    #                                   per_device_train_batch_size=8,
+    #                                   per_device_eval_batch_size=8,
+    #                                   learning_rate=0.00005,
+    #                                   # END YOUR END
+    #
+    #                                   save_total_limit=2,
+    #                                   log_level="error",
+    #                                   evaluation_strategy="epoch")
 
     # trainer = Trainer(
     #     model=model,
