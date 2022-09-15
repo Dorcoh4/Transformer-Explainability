@@ -47,7 +47,7 @@ torch.backends.cudnn.benchmark = False
 import numpy as np
 
 latex_special_token = ["!@#$%^&*()"]
-distilbert_tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+distilbert_tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
 def generate(text_list, attention_list, latex_file, color='red', rescale_value=False):
     attention_list = attention_list[:len(text_list)]

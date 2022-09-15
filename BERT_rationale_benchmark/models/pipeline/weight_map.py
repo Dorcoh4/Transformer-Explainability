@@ -66,7 +66,7 @@ def convert_dataset(raw_dataset, documents, name, imdb_data=None):
 
 def tokenize_dataset(raw_dataset, tokenizer=None):
     if tokenizer is None:
-        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
     def tokenize_function(examples):
         return tokenizer(examples["text"], padding="max_length", truncation=True)
@@ -83,7 +83,7 @@ def train_classifier(train_dataset, eval_dataset):
         predictions = np.argmax(logits, axis=-1)
         return metric.compute(predictions=predictions, references=labels)
 
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
     model.train()
 
     training_args = TrainingArguments("DAN",
@@ -136,7 +136,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     batch_size = 4
     train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
 
-    mask_model = AutoModelForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=1)
+    mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1)
 
     optimizer = SGD(mask_model.parameters(), lr=5e-5, momentum=0.9)
 
@@ -298,7 +298,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
     mask_model.train()
 
 def eval_eye(mask_model, classifier, eval_dataset, index):
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     eval_dataset = eval_dataset.remove_columns(["text"])
     # eval_dataset = eval_dataset.remove_columns(["label"])
     eval_dataset.set_format("torch")
