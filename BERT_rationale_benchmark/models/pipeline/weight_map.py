@@ -43,6 +43,8 @@ suffix = "_retro_bert"
 best_validation_score = 0
 best_validation_epoch = 0
 
+distilbert_tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+
 def convert_dataset(raw_dataset, documents, name, imdb_data=None):
     texts = []
     labels = []
@@ -180,12 +182,13 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             unrelated_tokens = unrelated_tokens.roll(-1, 1)
             unrelated_tokens[:, 0] = 0
             unrelated_tokens[:, -1] = 0
-
             # unrelated_tokens[:,sep_locs] = 0
             unrelated_tokens = unrelated_tokens.unsqueeze(2)
             relevant_mask = mask * unrelated_tokens
             mask = relevant_mask + ~(unrelated_tokens.bool())
-            masked_in = classifier.bert.embeddings(batch['input_ids']) * mask
+            input_ids = batch['input_ids']
+            scores_per_word = my_scores_per_word_from_scores_per_token(distilbert_tokenizer, mask, input_ids)
+            masked_in = classifier.distilibert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
             batch.pop('input_ids', None)
@@ -381,6 +384,36 @@ def eval_eye(mask_model, classifier, eval_dataset, index):
 #         k = k + 1
 #         if k > 10:
 #             break
+
+
+def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
+    res = []
+    sentences = tokenizer.batch_decode(input_ids)
+    for i in range(len(input_ids)):
+        curr_res = []
+        res.append(curr_res)
+        curr_scores = scores[i]
+        curr_ids = input_ids[i]
+        curr_sentence = sentences[i].split(" ")
+        tokens = tokenizer.batch_decode(curr_ids)
+        # alnum_trouble = False
+        curr_word_len = 0
+        j = -1
+        first_token= True
+        for t in range(len(tokens)):
+            token = tokens[t]
+            token_len = len(token)
+            part_token = token.startswith("##")
+            if not first_token and (token.startswith("##") or curr_word_len < len(curr_sentence[j])):
+                # alnum_trouble = not (tokens[t].startswith("##") or tokens[t].isalnum())
+                curr_res[j] = max(curr_res[j], curr_scores[t].item())
+                curr_word_len += token_len -2 if part_token else token_len
+            else:
+                first_token = False
+                j += 1
+                curr_word_len = token_len
+                curr_res.append(curr_scores[t].item())
+    return res
 
 
 def load_masker(epoch):
