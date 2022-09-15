@@ -66,7 +66,7 @@ def convert_dataset(raw_dataset, documents, name, imdb_data=None):
 
 def tokenize_dataset(raw_dataset, tokenizer=None):
     if tokenizer is None:
-        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
     def tokenize_function(examples):
         return tokenizer(examples["text"], padding="max_length", truncation=True)
