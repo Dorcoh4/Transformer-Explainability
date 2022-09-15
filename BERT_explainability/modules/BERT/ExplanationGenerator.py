@@ -7,6 +7,7 @@ import glob
 from transformers import AutoTokenizer
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+tokenizer_d = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 def compute_rollout_attention(all_layer_matrices, start_layer=0):
     # adding residual consideration- code adapted from https://github.com/samiraabnar/attention_flow
@@ -161,7 +162,7 @@ class Generator:
         return cam[:, 0]
 
     def generate_distilbert_explanation(self, input_ids, attention_mask, index=None): #FORDOR not enough tokens
-        tokenizer = self.bert_tokenizer
+        tokenizer = tokenizer_d
         new_batch = tokenizer(self.bert_tokenizer.batch_decode(input_ids)[0][6:-6])
         input_ids = torch.tensor(new_batch['input_ids'], dtype=torch.int, device=device).unsqueeze(0)
         attention_mask = torch.tensor(new_batch['attention_mask'], device=device, dtype=torch.int).unsqueeze(0)

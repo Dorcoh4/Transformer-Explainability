@@ -38,7 +38,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_retro_adamw"
+suffix = "_retro_hm"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -140,7 +140,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     mask_model = AutoModelForTokenClassification.from_pretrained("distilbert-base-uncased", num_labels=1)
 
-    optimizer = AdamW(mask_model.parameters(), lr=5e-5)
+    optimizer = SGD(mask_model.parameters(), lr=5e-5, momentum=0.9)
 
     num_epochs = 100
     num_training_steps = num_epochs * len(train_dataloader)
@@ -176,16 +176,6 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             labels = batch.pop('label', None)
             g_out = mask_model(**batch)
             mask = sigmoid(g_out.logits)
-            attention_mask = batch['attention_mask']
-            unrelated_tokens = attention_mask.detach().clone()
-            # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
-            unrelated_tokens = unrelated_tokens.roll(-1, 1)
-            unrelated_tokens[:, 0] = 0
-            unrelated_tokens[:, -1] = 0
-            # unrelated_tokens[:,sep_locs] = 0
-            unrelated_tokens = unrelated_tokens.unsqueeze(2)
-            relevant_mask = mask * unrelated_tokens
-            mask = relevant_mask + ~(unrelated_tokens.bool())
             masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
@@ -196,7 +186,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             # masked_probs = softmax(out2.logits)
 
             ce_loss = crossEntropyLoss(out2.logits, labels)
-            mask_loss = torch.norm(relevant_mask, 1, dim=1).sum() / batch_size
+            mask_loss = torch.norm(mask, 1) / batch_size
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
 
