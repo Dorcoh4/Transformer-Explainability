@@ -154,9 +154,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     for param in classifier.parameters():
         param.requires_grad = False
 
-    for param in mask_model.bert.parameters():
+    for param in mask_model.distilbert.parameters():
         param.requires_grad = False
-    for param in mask_model.bert.encoder.layer[11].parameters():
+    for param in mask_model.distilbert.transformer.layer[5].parameters():
         param.requires_grad = True
 
     mask_model.train()
@@ -186,9 +186,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             unrelated_tokens = unrelated_tokens.unsqueeze(2)
             relevant_mask = mask * unrelated_tokens
             mask = relevant_mask + ~(unrelated_tokens.bool())
-            input_ids = batch['input_ids']
-            scores_per_word = my_scores_per_word_from_scores_per_token(distilbert_tokenizer, mask, input_ids)
-            masked_in = classifier.distilibert.embeddings(batch['input_ids']) * mask
+            masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
             batch.pop('input_ids', None)
