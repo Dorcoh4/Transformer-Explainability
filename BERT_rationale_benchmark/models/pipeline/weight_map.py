@@ -183,10 +183,10 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             batch['inputs_embeds'] = masked_in
             out2 = classifier(**batch)
             # original_probs = softmax(out1.logits)
-            # masked_probs = softmax(out2.logits)
+            masked_probs = softmax(out2.logits)
 
-            ce_loss = crossEntropyLoss(out2.logits, labels)
-            mask_loss = torch.norm(mask, 1) / batch_size
+            ce_loss = crossEntropyLoss(out2.logits, masked_probs)
+            mask_loss = torch.norm(mask, 1, dim=1).sum() / batch_size
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
 
