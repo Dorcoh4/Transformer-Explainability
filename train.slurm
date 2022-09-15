@@ -3,7 +3,7 @@
 #SBATCH --output=mask_retro.out
 #SBATCH --error=mask_retro.err
 #SBATCH --partition=studentbatch
-#SBATCH --time=3500
+#SBATCH --time=1500
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gpus=1
