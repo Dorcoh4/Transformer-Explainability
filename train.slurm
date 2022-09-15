@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=bert-mask_retro
-#SBATCH --output=mask_retro.out
-#SBATCH --error=mask_retro.err
+#SBATCH --job-name=bert-mask_retro_bert
+#SBATCH --output=mask_retro_bert.out
+#SBATCH --error=mask_retro_bert.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
