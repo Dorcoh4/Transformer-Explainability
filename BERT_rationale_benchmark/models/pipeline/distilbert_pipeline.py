@@ -429,7 +429,7 @@ def main():
     del train
     del val
 
-    masker = None
+    masker = weight_map.load_masker('99_retro')
 
     test_classifier = BertForSequenceClassificationTest.from_pretrained(model_params['bert_dir'],
                                                                         num_labels=len(evidence_classes)).to(device)

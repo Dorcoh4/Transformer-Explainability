@@ -405,7 +405,7 @@ def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
 
 
 def load_masker(epoch):
-    mask_model = torch.load(f'{directory}imdb_masker-{epoch}{suffix}.pt', map_location=device)
+    mask_model = torch.load(f'{directory}imdb_masker-{epoch}.pt', map_location=device)
     mask_model.eval()
     return mask_model
 
