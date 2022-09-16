@@ -176,7 +176,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             labels = batch.pop('label', None)
             g_out = mask_model(**batch)
             mask = sigmoid(g_out.logits)
-            masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
+            masked_in = classifier.bert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
             batch.pop('input_ids', None)
