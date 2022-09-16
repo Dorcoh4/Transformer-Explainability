@@ -428,7 +428,7 @@ def main():
     # test
     del train
     del val
-
+    from transformers import AutoModelForTokenClassification
     masker = weight_map.load_masker('99_retro')
 
     test_classifier = BertForSequenceClassificationTest.from_pretrained(model_params['bert_dir'],
@@ -573,7 +573,7 @@ def main():
                     cam_target = cam_target[0]
                     tokenizer = distilbert_tokenizer
                 cam_target = cam_target.clamp(min=0)
-                # generate(text, cam_target,
+                 # generate(text, cam_target,
                 #          (os.path.join(args.output_dir, '{0}/{1}_GT_{2}_{3}.tex').format(
                 #              method_folder[method], j, classification, is_classification_correct)))
                 if method in ["transformer_attribution", "partial_lrp", "attn_gradcam", "lrp"]:

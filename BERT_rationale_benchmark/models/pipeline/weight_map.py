@@ -262,10 +262,10 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
                 input_ids = cam_target[1]
                 attention_masks = cam_target[2]
                 cam_target = cam_target[0]
-                # tokenizer = distilbert_tokenizer
+                tokenizer = distilbert_tokenizer
             cam_target = cam_target.clamp(min=0)
             cam = cam_target
-            cam = distilbert_pipeline.scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[0], cam)
+            cam = weight_map.my_scores_per_word_from_scores_per_token(tokenizer, cam.unsqueeze(0), input_ids)[0][0]
             j = j + 1
             doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
             for i in [80]:
@@ -385,7 +385,7 @@ def eval_eye(mask_model, classifier, eval_dataset, index):
 #         if k > 10:
 #             break
 
-
+# FORDOR remember you copy pasted the validation code!!
 def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
     res = []
     sentences = tokenizer.batch_decode(input_ids)
@@ -414,6 +414,7 @@ def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
                 curr_word_len = token_len
                 curr_res.append(curr_scores[t].item())
     return torch.tensor(res), sentences
+
 
 def scores_per_token_from_scores_per_word(tokenizer, scores, sentences):
 
