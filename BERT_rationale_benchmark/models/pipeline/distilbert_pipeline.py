@@ -572,6 +572,7 @@ def main():
                     attention_masks = cam_target[2]
                     cam_target = cam_target[0]
                     # tokenizer = distilbert_tokenizer
+                    tokenizer = distilbert_tokenizer
                 cam_target = cam_target.clamp(min=0)
                 # generate(text, cam_target,
                 #          (os.path.join(args.output_dir, '{0}/{1}_GT_{2}_{3}.tex').format(
@@ -584,7 +585,7 @@ def main():
                              (os.path.join(args.output_dir, '{0}/{1}_CF.tex').format(
                                  method_folder[method], j)))
                 cam = cam_target
-                cam = scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[0], cam)
+                cam = weight_map.my_scores_per_word_from_scores_per_token(tokenizer, cam, input_ids)[0][0]
                 j = j + 1
                 doc_name = extract_docid_from_dataset_element(s)
                 for res, i in enumerate(range(5, 85, 5)):

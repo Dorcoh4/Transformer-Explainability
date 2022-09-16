@@ -413,6 +413,36 @@ def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
                 j += 1
                 curr_word_len = token_len
                 curr_res.append(curr_scores[t].item())
+    return res, sentences
+
+def scores_per_token_from_scores_per_word(tokenizer, scores, sentences):
+
+    tokens = tokenizer(sentences)
+    res = torch.zeros(tokens)
+    for i in range(len(tokens)):
+        curr_res = res[i]
+        # res.append(curr_res)
+        curr_scores = scores[i]
+        # curr_ids = input_ids[i]
+        curr_sentence = sentences[i].split(" ")
+        curr_tokens = tokenizer.batch_decode(tokens[i])
+        # alnum_trouble = False
+        curr_word_len = 0
+        j = -1
+        first_token= True
+        for t in range(len(curr_tokens)):
+            token = curr_tokens[t]
+            token_len = len(token)
+            part_token = token.startswith("##")
+            if not first_token and (token.startswith("##") or curr_word_len < len(curr_sentence[j])):
+                # alnum_trouble = not (tokens[t].startswith("##") or tokens[t].isalnum())
+                curr_res[t] = (curr_scores[j])
+                curr_word_len += token_len -2 if part_token else token_len
+            else:
+                first_token = False
+                j += 1
+                curr_word_len = token_len
+                curr_res[t] = (curr_scores[j])
     return res
 
 
