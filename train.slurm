@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=bert-mask_p2_unrelated
-#SBATCH --output=mask_p2_unrelated.out
-#SBATCH --error=mask_p2_unrelated.err
+#SBATCH --job-name=bert-mask_p3_imdb
+#SBATCH --output=mask_p3_imdb.out
+#SBATCH --error=mask_p3_imdb.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
