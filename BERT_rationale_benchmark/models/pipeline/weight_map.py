@@ -38,7 +38,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_p3_imdb"
+suffix = "_p3_imdb_gt"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -195,9 +195,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             batch['inputs_embeds'] = masked_in
             out2 = classifier(**batch)
             # original_probs = softmax(out1.logits)
-            masked_probs = softmax(out2.logits)
+            # masked_probs = softmax(out2.logits)
 
-            ce_loss = crossEntropyLoss(out2.logits, masked_probs)
+            ce_loss = crossEntropyLoss(out2.logits, labels)
             mask_loss = torch.norm(relevant_mask, 1, dim=1).sum() / batch_size
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
