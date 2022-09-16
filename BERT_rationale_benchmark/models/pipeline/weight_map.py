@@ -413,7 +413,7 @@ def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
                 j += 1
                 curr_word_len = token_len
                 curr_res.append(curr_scores[t].item())
-    return res, sentences
+    return torch.tensor(res), sentences
 
 def scores_per_token_from_scores_per_word(tokenizer, scores, sentences):
 
