@@ -429,7 +429,7 @@ def main():
     del train
     del val
 
-    masker = weight_map.load_masker('99_retro')
+    masker = weight_map.load_masker('99_retro_bug_movie')
 
     test_classifier = BertForSequenceClassificationTest.from_pretrained(model_params['bert_dir'],
                                                                         num_labels=len(evidence_classes)).to(device)
@@ -571,7 +571,6 @@ def main():
                     input_ids = cam_target[1]
                     attention_masks = cam_target[2]
                     cam_target = cam_target[0]
-                    # tokenizer = distilbert_tokenizer
                     tokenizer = distilbert_tokenizer
                 cam_target = cam_target.clamp(min=0)
                 # generate(text, cam_target,
