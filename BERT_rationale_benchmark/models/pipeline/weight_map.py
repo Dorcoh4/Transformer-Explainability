@@ -38,7 +38,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_retro_tanh_unrelated"
+suffix = "_retro_unrelated"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -176,7 +176,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             batch = {k: v.to(device) for k, v in batch.items()}
             labels = batch.pop('label', None)
             g_out = mask_model(**batch)
-            mask = tanh(g_out.logits)
+            mask = sigmoid(g_out.logits)
             attention_mask = batch['attention_mask']
             unrelated_tokens = attention_mask.detach().clone()
             # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
@@ -311,7 +311,7 @@ def eval_eye(mask_model, classifier, eval_dataset, index):
         for temp_batch in eval_dataloader:
             labels = temp_batch.pop('label', None)
             batch = {k: v.to(device) for k, v in temp_batch.items()}
-            masker_output = torch.tanh(mask_model(**batch).logits)
+            masker_output = torch.sigmoid(mask_model(**batch).logits)
             classifier_output = classifier(**batch)
 
             for j in range(len(masker_output)):
