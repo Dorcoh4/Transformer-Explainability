@@ -584,7 +584,7 @@ def main():
                              (os.path.join(args.output_dir, '{0}/{1}_CF.tex').format(
                                  method_folder[method], j)))
                 cam = cam_target
-                cam = weight_map.my_scores_per_word_from_scores_per_token(tokenizer, cam, input_ids)[0]
+                cam = weight_map.my_scores_per_word_from_scores_per_token(tokenizer, cam, input_ids)
                 print(cam)
                 j = j + 1
                 doc_name = extract_docid_from_dataset_element(s)
