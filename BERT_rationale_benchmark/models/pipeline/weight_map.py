@@ -38,7 +38,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 
-suffix = "_p3_imdb_gt"
+suffix = "_p3_mv_gt"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -471,9 +471,9 @@ def main():
                  chain.from_iterable(chain.from_iterable(map(lambda ann: ann.evidences, chain(train, val, test)))))
     documents = load_documents(data_dir, docids)
     imdb_data = load_dataset("imdb")
-    train_dataset = imdb_data['train']
+    # train_dataset = imdb_data['train']
     # print(f"IMDB dataset - train:{len(imdb_data['train'])}, test:{imdb_data['test']}")
-    # train_dataset = convert_dataset(train, documents, "train")
+    train_dataset = convert_dataset(train, documents, "train")
     val_dataset = convert_dataset(val, documents, "validation")
     test_dataset = convert_dataset(test, documents, "test")
 
