@@ -36,7 +36,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 # directory = "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 # data_dir = "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
-data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies"
+data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies/"
 
 suffix = "_p3_imdb"
 
@@ -473,11 +473,11 @@ def main():
     imdb_data = load_dataset("imdb")
     train_dataset = imdb_data['train']
     # print(f"IMDB dataset - train:{len(imdb_data['train'])}, test:{imdb_data['test']}")
-    # train_dataset = convert_dataset(train, documents, "train")
+    train_dataset = convert_dataset(train, documents, "train")
     val_dataset = convert_dataset(val, documents, "validation")
     test_dataset = convert_dataset(test, documents, "test")
 
-    train_dataset = tokenize_dataset(train_dataset)
+    # train_dataset = tokenize_dataset(train_dataset)
     # val_dataset = tokenize_dataset(val_dataset)
     # test_dataset = tokenize_dataset(test_dataset)
 
