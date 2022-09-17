@@ -3,6 +3,7 @@ import sys
 import torch
 from itertools import chain
 import weight_map
+import argparse
 from BERT_rationale_benchmark.utils import load_documents, load_datasets, annotations_from_jsonl
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
