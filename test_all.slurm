@@ -1,7 +1,7 @@
 #! /bin/sh
 #SBATCH --job-name=test_all
-#SBATCH --output=test_all.out
-#SBATCH --error=test_all.err
+#SBATCH --output=test_all2.out
+#SBATCH --error=test_all2.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
