@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=bert-mask_p3_mv
-#SBATCH --output=mask_p3_mv.out
-#SBATCH --error=mask_p3_mv.err
+#SBATCH --job-name=bert-mask_p3_mv_tanh
+#SBATCH --output=mask_p3_mv_tanh.out
+#SBATCH --error=mask_p3_mv_tanh.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
