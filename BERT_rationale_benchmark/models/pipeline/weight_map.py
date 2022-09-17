@@ -265,7 +265,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
                 tokenizer = distilbert_tokenizer
             cam_target = cam_target.clamp(min=0)
             cam = cam_target
-            cam = weight_map.my_scores_per_word_from_scores_per_token(tokenizer, cam.unsqueeze(0), input_ids)[0][0]
+            cam = my_scores_per_word_from_scores_per_token(tokenizer, cam.unsqueeze(0), input_ids)[0][0]
             j = j + 1
             doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
             for i in [80]:
