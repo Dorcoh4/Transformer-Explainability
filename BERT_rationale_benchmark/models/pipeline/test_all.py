@@ -35,7 +35,7 @@ def main():
     onlyfiles = [f for f in os.listdir(dir) if f.endswith(".pt") and "99" in f and os.path.isfile(os.path.join(dir, f))]
     maskers_lst = [torch.load(dir + f, map_location=device) for f in onlyfiles]
     def test_masker(masker):
-        return weight_map.epoch_validation(-3, masker, evidence_classifier, tokenizer, val, word_interner, de_interner, evidence_classes,
+        return weight_map.epoch_validation(-3, masker, evidence_classifier, tokenizer, test, word_interner, de_interner, evidence_classes,
                          interned_documents, documents, annotations)
     scores = [test_masker(masker) for masker in maskers_lst]
     print(sorted(zip(scores, onlyfiles), key=lambda pair: pair[0]))
