@@ -299,6 +299,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
     print(f"epoch {epoch} validation score: {value}")
     print(f"BEST epoch {best_validation_epoch} BEST score: {best_validation_score}")
     mask_model.train()
+    return value
 
 def eval_eye(mask_model, classifier, eval_dataset, index):
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
