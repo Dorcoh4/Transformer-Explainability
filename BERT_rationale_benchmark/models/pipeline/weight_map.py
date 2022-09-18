@@ -256,7 +256,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
             # preds = all_preds[d]
             cam_target = all_cam_targets[d]
             doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
-            # inp = documents[doc_name].split()
+            inp = documents[doc_name].split()
             # classification = "neg" if targets.item() == 0 else "pos"
             # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
             # text = tokenizer.convert_ids_to_tokens(input_ids[0])
@@ -268,7 +268,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
 
             cam_target = cam_target.clamp(min=0)
             cam = cam_target
-            cam = my_scores_per_word_from_scores_per_token(tokenizer, cam.unsqueeze(0), input_ids[d].unsqueeze(0))[0][0]
+            cam = bert_pipeline.scores_per_word_from_scores_per_token(inp, tokenizer,input_ids[d], cam)
             j = j + 1
             d = d+1
             doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
@@ -304,6 +304,8 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
     print(f"BEST epoch {best_validation_epoch} BEST score: {best_validation_score}")
     mask_model.train()
     return value
+
+
 
 def eval_eye(mask_model, classifier, eval_dataset, index):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
