@@ -13,6 +13,7 @@ from transformers import AutoModelForSequenceClassification
 from transformers import Trainer
 from transformers import TrainingArguments
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 from transformers import AutoModelForTokenClassification
 from torch.optim import AdamW
 from torch.optim import SGD
@@ -235,18 +236,18 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
     j = 0
     for batch_start in range(0, len(val), test_batch_size):
         batch_elements = val[batch_start:min(batch_start + test_batch_size, len(val))]
-        val = val[test_batch_size:]
+        # val = val[test_batch_size:]
         targets = [evidence_classes[s.classification] for s in batch_elements]
         targets = torch.tensor(targets, dtype=torch.long, device=device)
-        # samples_encoding = [interned_documents[bert_pipeline.extract_docid_from_dataset_element(s)] for s in batch_elements]
-        encoded_batch = tokenizer(batch_elements)
-        input_ids = encoded_batch['input_ids']
-        attention_masks = encoded_batch['attention_mask']
-        # input_ids = torch.stack(
-        #     [F.pad(samples_encoding[i]['input_ids'],(0, 512 - len(samples_encoding[i]['input_ids'].squeeze())), "constant", 0) for i in range(len(samples_encoding))]).squeeze(1).to(device)
-        # attention_masks = torch.stack(
-        #     [samples_encoding[i]['attention_mask'] for i in range(len(samples_encoding))]).squeeze(1).to(
-        #     device)
+        samples_encoding = [interned_documents[bert_pipeline.extract_docid_from_dataset_element(s)] for s in batch_elements]
+        # encoded_batch = tokenizer(batch_elements, padding="max_length", truncation=True)
+        # input_ids = encoded_batch['input_ids']
+        # attention_masks = encoded_batch['attention_mask']
+        input_ids = torch.stack(
+            [F.pad(samples_encoding[i]['input_ids'],(0, 512 - len(samples_encoding[i]['input_ids'].squeeze())), "constant", 0) for i in range(len(samples_encoding))]).squeeze(1).to(device)
+        attention_masks = torch.stack(
+            [F.pad(samples_encoding[i]['attention_mask'],(0, 512 - len(samples_encoding[i]['attention_mask'].squeeze())), "constant", 0) for i in range(len(samples_encoding))]).squeeze(1).to(
+            device)
         all_preds = classifier(input_ids=input_ids, attention_mask=attention_masks)
         all_cam_targets = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_masks))
         d = 0
