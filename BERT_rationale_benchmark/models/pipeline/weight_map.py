@@ -480,7 +480,7 @@ def main():
 
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = load_classifier(args.model_params)
 
-    train_dataset = tokenize_dataset(train_dataset)
+    train_dataset = tokenize_dataset(train_dataset, tokenizer)
     # val_dataset = tokenize_dataset(val_dataset)
     # test_dataset = tokenize_dataset(test_dataset)
 
