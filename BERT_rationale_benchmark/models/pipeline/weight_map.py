@@ -154,9 +154,9 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     for param in classifier.parameters():
         param.requires_grad = False
 
-    for param in mask_model.distilbert.parameters():
+    for param in mask_model.bert.parameters():
         param.requires_grad = False
-    for param in mask_model.distilbert.transformer.layer[5].parameters():
+    for param in mask_model.bert.encoder.layer[11].parameters():
         param.requires_grad = True
 
     mask_model.train()
