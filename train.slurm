@@ -1,0 +1,12 @@
+#! /bin/sh
+#SBATCH --job-name=movies-mask_bert
+#SBATCH --output=movies_bert.out
+#SBATCH --error=movies_bert.err
+#SBATCH --partition=studentbatch
+#SBATCH --time=1500
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --gpus=1
+export HF_DATASETS_CACHE="/home/joberant/NLP_2122/dorcoh4/.cache/huggingface/datasets"
+export TRANSFORMERS_CACHE="/home/joberant/NLP_2122/dorcoh4/.cache/huggingface/"
+python weight_map.py
