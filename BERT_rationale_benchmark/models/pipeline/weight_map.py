@@ -188,7 +188,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             unrelated_tokens = unrelated_tokens.unsqueeze(2)
             relevant_mask = mask * unrelated_tokens
             mask = relevant_mask + ~(unrelated_tokens.bool())
-            masked_in = classifier.distilbert.embeddings(batch['input_ids']) * mask
+            masked_in = classifier.bert.embeddings(batch['input_ids']) * mask
 
             # out1 = classifier(**batch)
             batch.pop('input_ids', None)
