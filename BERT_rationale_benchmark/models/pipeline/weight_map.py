@@ -249,7 +249,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
             [F.pad(samples_encoding[i]['attention_mask'],(0, 512 - len(samples_encoding[i]['attention_mask'].squeeze())), "constant", 0) for i in range(len(samples_encoding))]).squeeze(1).to(
             device)
         all_preds = classifier(input_ids=input_ids, attention_mask=attention_masks)
-        all_cam_targets = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_masks))
+        all_cam_targets = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_masks).logits)
         d = 0
 
         for s in batch_elements:
