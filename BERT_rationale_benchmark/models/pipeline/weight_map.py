@@ -268,7 +268,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
 
             cam_target = cam_target.clamp(min=0)
             cam = cam_target
-            cam = my_scores_per_word_from_scores_per_token(tokenizer, cam.unsqueeze(0), input_ids)[0][0]
+            cam = my_scores_per_word_from_scores_per_token(tokenizer, cam.unsqueeze(0), input_ids[d].unsqueeze(0))[0][0]
             j = j + 1
             d = d+1
             doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
