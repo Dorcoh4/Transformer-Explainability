@@ -26,7 +26,7 @@ from captum.attr import (
     visualization
 )
 # import torchviz
-import distilbert_pipeline
+import bert_pipeline
 from BERT_rationale_benchmark.utils import load_documents, load_datasets, annotations_from_jsonl
 from BERT_rationale_benchmark.metrics import score_hard_rationale_predictions, Rationale
 from BERT_explainability.modules.BERT.ExplanationGenerator import Generator
@@ -124,7 +124,7 @@ def load_classifier(model_params):
         model_params = json.load(fp)
         print(f'Params: {json.dumps(model_params, indent=2, sort_keys=True)}')
     evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer = \
-        distilbert_pipeline.initialize_models(model_params, batch_first=True)
+        bert_pipeline.initialize_models(model_params, batch_first=True)
     evidence_classifier.eval()
     return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer
 
@@ -238,7 +238,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
         val = val[test_batch_size:]
         targets = [evidence_classes[s.classification] for s in batch_elements]
         targets = torch.tensor(targets, dtype=torch.long, device=device)
-        samples_encoding = [interned_documents[distilbert_pipeline.extract_docid_from_dataset_element(s)] for s in batch_elements]
+        samples_encoding = [interned_documents[bert_pipeline.extract_docid_from_dataset_element(s)] for s in batch_elements]
         input_ids = torch.stack(
             [samples_encoding[i]['input_ids'] for i in range(len(samples_encoding))]).squeeze(1).to(device)
         attention_masks = torch.stack(
@@ -251,7 +251,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
         for s in batch_elements:
             preds = all_preds[d]
             cam_target = all_cam_targets[d]
-            doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
+            doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
             inp = documents[doc_name].split()
             classification = "neg" if targets.item() == 0 else "pos"
             is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
@@ -267,7 +267,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
             cam = my_scores_per_word_from_scores_per_token(tokenizer, cam.unsqueeze(0), input_ids)[0][0]
             j = j + 1
             d = d+1
-            doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
+            doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
             for i in [80]:
                 hard_rationales = []
                 print("calculating top ", i)
