@@ -395,7 +395,7 @@ def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
         res.append(curr_res)
         curr_scores = scores[i]
         curr_ids = input_ids[i]
-        curr_sentence = sentences[i].split(" ")
+        curr_sentence = sentences[i].split()
         tokens = tokenizer.batch_decode(curr_ids)
         # alnum_trouble = False
         curr_word_len = 0
