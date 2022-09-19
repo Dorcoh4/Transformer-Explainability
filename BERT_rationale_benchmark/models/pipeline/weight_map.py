@@ -244,15 +244,15 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
         attention_masks = torch.stack(
             [samples_encoding[i]['attention_mask'] for i in range(len(samples_encoding))]).squeeze(1).to(
             device)
-        preds = classifier(input_ids=input_ids, attention_mask=attention_masks)[0]
+        # preds = classifier(input_ids=input_ids, attention_mask=attention_masks)[0]
         for s in batch_elements:
             doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
-            inp = documents[doc_name].split()
-            classification = "neg" if targets.item() == 0 else "pos"
-            is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
-            text = tokenizer.convert_ids_to_tokens(input_ids[0])
-            classification = "neg" if targets.item() == 0 else "pos"
-            is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+            # inp = documents[doc_name].split()
+            # classification = "neg" if targets.item() == 0 else "pos"
+            # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+            # text = tokenizer.convert_ids_to_tokens(input_ids[0])
+            # classification = "neg" if targets.item() == 0 else "pos"
+            # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
             target_idx = targets.item()
             print("FORDOR")
             print(batch_start)
