@@ -29,7 +29,8 @@ def main():
     if os.path.exists(cache):
         print(f'Loading interned documents from {cache}')
         (interned_documents) = torch.load(cache)
-    annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'test' + '.jsonl'))
+    annotations = None
+    weight_map.args_data_dir = args.data_dir
 
     dir = weight_map.directory
     onlyfiles = [f for f in os.listdir(dir) if f.endswith(".pt") and "99" in f and os.path.isfile(os.path.join(dir, f))]

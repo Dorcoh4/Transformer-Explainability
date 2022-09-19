@@ -45,6 +45,8 @@ best_validation_epoch = 0
 
 distilbert_tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
+args_data_dir = None
+
 def convert_dataset(raw_dataset, documents, name, imdb_data=None):
     texts = []
     labels = []
@@ -246,7 +248,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
             device)
         # preds = classifier(input_ids=input_ids, attention_mask=attention_masks)[0]
         for s in batch_elements:
-            doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
+            # doc_name = distilbert_pipeline.extract_docid_from_dataset_element(s)
             # inp = documents[doc_name].split()
             # classification = "neg" if targets.item() == 0 else "pos"
             # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
@@ -286,6 +288,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
                 }
                 results.append(result_dict)
                 # result_files[res].write(json.dumps(result_dict) + "\n")
+    annotations_from_jsonl(os.path.join(args_data_dir, 'test' + '.jsonl'))
     truth = list(chain.from_iterable(Rationale.from_annotation(ann) for ann in annotations))
     pred = list(chain.from_iterable(Rationale.from_instance(inst) for inst in results))
     token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
