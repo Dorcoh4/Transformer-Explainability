@@ -288,7 +288,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
                 }
                 results.append(result_dict)
                 # result_files[res].write(json.dumps(result_dict) + "\n")
-    annotations_from_jsonl(os.path.join(args_data_dir, 'test' + '.jsonl'))
+    annotations = annotations_from_jsonl(os.path.join(args_data_dir, 'test' + '.jsonl'))
     truth = list(chain.from_iterable(Rationale.from_annotation(ann) for ann in annotations))
     pred = list(chain.from_iterable(Rationale.from_instance(inst) for inst in results))
     token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
