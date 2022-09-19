@@ -179,7 +179,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             labels = batch.pop('label', None)
             g_out = mask_model(**batch)
             mask = sigmoid(g_out.logits)
-            mask = F.dropout(mask, output_dropout, inplace=True)
+            mask = F.dropout(mask, output_dropout)
             attention_mask = batch['attention_mask']
             unrelated_tokens = attention_mask.detach().clone()
             # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
