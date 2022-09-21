@@ -232,7 +232,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
     global best_validation_score
     global best_validation_epoch
     test_batch_size = 4
-    results = []
+    results = {num_token: [] for num_token in token_nums}
     mask_model.eval()
     # explanations = Generator(classifier, mask_model, tokenizer)
 
@@ -291,15 +291,18 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
                         "hard_rationale_predictions": hard_rationales
                     }],
                 }
-                results.append(result_dict)
+                results[i].append(result_dict)
                 # result_files[res].write(json.dumps(result_dict) + "\n")
-                truth = list(chain.from_iterable(Rationale.from_annotation(ann) for ann in annotations))
-                pred = list(chain.from_iterable(Rationale.from_instance(inst) for inst in results))
-                token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
-                token_level_pred = list(chain.from_iterable(rat.to_token_level() for rat in pred))
-                token_level_prf = score_hard_rationale_predictions(token_level_truth, token_level_pred)
-                print(token_level_prf)
-                value = token_level_prf['instance_macro']['f1']
+        for token_num in token_nums:
+            curr_results = results[token_num]
+            truth = list(chain.from_iterable(Rationale.from_annotation(ann) for ann in annotations))
+            pred = list(chain.from_iterable(Rationale.from_instance(inst) for inst in results))
+            token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
+            token_level_pred = list(chain.from_iterable(rat.to_token_level() for rat in pred))
+            token_level_prf = score_hard_rationale_predictions(token_level_truth, token_level_pred)
+            print(f"(macro) top k = {token_num}")
+            print(token_level_prf)
+            value = token_level_prf['instance_macro']['f1']
         if value > best_validation_score:
             best_validation_score = value
             best_validation_epoch = epoch
