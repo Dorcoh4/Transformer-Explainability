@@ -47,9 +47,9 @@ def main():
     if os.path.exists(cache):
         print(f'Loading interned documents from {cache}')
         (interned_documents) = torch.load(cache)
-    annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'test' + '.jsonl'))
+    annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'val' + '.jsonl'))
     masker = weight_map.load_masker("7_bert_0_adamw")
-    weight_map.epoch_validation(0, masker, evidence_classifier, tokenizer, test, word_interner, de_interner, evidence_classes,
+    weight_map.epoch_validation(0, masker, evidence_classifier, tokenizer, val, word_interner, de_interner, evidence_classes,
                          interned_documents, documents, annotations, range(5, 85, 5))
 
 if __name__ == '__main__':
