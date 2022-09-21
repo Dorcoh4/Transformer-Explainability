@@ -142,7 +142,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1)
 
-    optimizer = SGD(mask_model.parameters(), lr=5e-5, momentum=0.9)
+    optimizer = AdamW(mask_model.parameters(), lr=5e-5)
 
     num_epochs = 100
     num_training_steps = num_epochs * len(train_dataloader)
