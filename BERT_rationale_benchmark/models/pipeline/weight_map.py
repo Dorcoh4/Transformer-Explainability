@@ -40,7 +40,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies/"
 
-suffix = "_bert_0_adamw"
+suffix = "_bert_cnt_001"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -131,7 +131,7 @@ def load_classifier(model_params):
     return evidence_classifier, word_interner, de_interner, evidence_classes, tokenizer
 
 
-def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations):
+def train_masker(classifier, classify_tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations, masker=None):
     train_dataset = train_dataset.remove_columns(["text"])
 
     # train_dataset = train_dataset.remove_columns(["label"])
@@ -140,7 +140,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     batch_size = 4
     train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
 
-    mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1)
+    mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1) if masker is None else masker
 
     optimizer = AdamW(mask_model.parameters(), lr=5e-5)
 
@@ -169,7 +169,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     tanh = torch.nn.Tanh()
 
     progress_bar = tqdm(range(num_training_steps))
-    lambda1 = 0
+    lambda1 = 0.001
     output_dropout = 0.333
     for epoch in range(num_epochs):
         running_loss = 0
@@ -592,7 +592,8 @@ def main():
         print(f'Loading interned documents from {cache}')
         (interned_documents) = torch.load(cache)
     annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'val' + '.jsonl'))
-    masker = train_masker(evidence_classifier, tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations)
+    masker = load_masker("99_bert_0_adamw")
+    masker = train_masker(evidence_classifier, tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations, masker)
     # eval_eye(masker, evidence_classifier, tokenizer, val_dataset, "20_gt")
 
 
