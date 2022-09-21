@@ -228,7 +228,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     print('Finished Training')
     return mask_model
 
-def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations):
+def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations, token_nums = [80]):
     global best_validation_score
     global best_validation_epoch
     test_batch_size = 4
@@ -275,7 +275,7 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
             j = j + 1
             d = d+1
             doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
-            for i in [80]:
+            for i in token_nums:
                 hard_rationales = []
                 print("calculating top ", i)
                 _, indices = cam.topk(k=i)
