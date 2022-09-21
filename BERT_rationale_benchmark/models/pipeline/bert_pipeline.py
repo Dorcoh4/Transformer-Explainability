@@ -44,6 +44,8 @@ torch.backends.cudnn.benchmark = False
 
 import numpy as np
 
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
 latex_special_token = ["!@#$%^&*()"]
 
 def generate(text_list, attention_list, latex_file, color='red', rescale_value = False):
@@ -253,8 +255,9 @@ def main():
     logger.info(f'We have {len(word_interner)} wordpieces')
     cache = os.path.join(args.output_dir, 'preprocessed.pkl')
     if os.path.exists(cache):
+        global device
         logger.info(f'Loading interned documents from {cache}')
-        (interned_documents) = torch.load(cache)
+        (interned_documents) = torch.load(cache, map_location=device)
     else:
         logger.info(f'Interning documents')
         interned_documents = {}
@@ -272,7 +275,7 @@ def main():
             interned_documents[d] = encoding
         torch.save((interned_documents), cache)
 
-    evidence_classifier = evidence_classifier.cuda()
+    # evidence_classifier = evidence_classifier.cuda()
     optimizer = None
     scheduler = None
 
@@ -312,8 +315,8 @@ def main():
     epoch_data = {}
     if os.path.exists(epoch_save_file):
         logging.info(f'Restoring model from {model_save_file}')
-        evidence_classifier.load_state_dict(torch.load(model_save_file))
-        epoch_data = torch.load(epoch_save_file)
+        evidence_classifier.load_state_dict(torch.load(model_save_file, map_location=device))
+        epoch_data = torch.load(epoch_save_file, map_location=device)
         start_epoch = epoch_data['epoch'] + 1
         # handle finishing because patience was exceeded or we didn't get the best final epoch
         if bool(epoch_data.get('done', 0)):
@@ -425,8 +428,8 @@ def main():
                                                             num_labels=len(evidence_classes)).to(device)
     if os.path.exists(epoch_save_file):
         logging.info(f'Restoring model from {model_save_file}')
-        test_classifier.load_state_dict(torch.load(model_save_file))
-        orig_lrp_classifier.load_state_dict(torch.load(model_save_file))
+        test_classifier.load_state_dict(torch.load(model_save_file, map_location=device))
+        orig_lrp_classifier.load_state_dict(torch.load(model_save_file, map_location=device))
         test_classifier.eval()
         orig_lrp_classifier.eval()
         test_batch_size = 1
@@ -436,7 +439,7 @@ def main():
         # explainability
         explanations = Generator(test_classifier)
         explanations_orig_lrp = Generator(orig_lrp_classifier)
-        method = "transformer_attribution"
+        method = "partial_lrp"
         method_folder = {"transformer_attribution": "ours", "partial_lrp": "partial_lrp", "last_attn": "last_attn",
                          "attn_gradcam": "attn_gradcam", "lrp": "lrp", "rollout": "rollout",
                          "ground_truth": "ground_truth", "generate_all": "generate_all"}
