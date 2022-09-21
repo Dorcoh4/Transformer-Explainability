@@ -17,6 +17,7 @@ import torch.nn.functional as F
 from transformers import AutoModelForTokenClassification
 from torch.optim import AdamW
 from torch.optim import SGD
+from bs4 import BeautifulSoup
 # import pyarrow as pa
 # import pyarrow.parquet as pq
 # import pyarrow.dataset as ds
@@ -39,7 +40,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies/"
 
-suffix = "_bert_04_d333"
+suffix = "_bert_0"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -168,7 +169,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     tanh = torch.nn.Tanh()
 
     progress_bar = tqdm(range(num_training_steps))
-    lambda1 = 0.04
+    lambda1 = 0
     output_dropout = 0.333
     for epoch in range(num_epochs):
         running_loss = 0
@@ -179,7 +180,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             labels = batch.pop('label', None)
             g_out = mask_model(**batch)
             mask = sigmoid(g_out.logits)
-            mask = F.dropout(mask, output_dropout)
+            # mask = F.dropout(mask, output_dropout)
             attention_mask = batch['attention_mask']
             unrelated_tokens = attention_mask.detach().clone()
             # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
@@ -309,92 +310,128 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
 
 
 
-def eval_eye(mask_model, classifier, eval_dataset, index):
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-    eval_dataset = eval_dataset.remove_columns(["text"])
-    # eval_dataset = eval_dataset.remove_columns(["label"])
-    eval_dataset.set_format("torch")
-    eval_dataloader = DataLoader(eval_dataset, batch_size=4)
-    with open(f'vizs-{index}.html', 'w') as outfile:
+def eval_eye(mask_model, classifier, tokenizer, val, index, word_interner, de_interner, evidence_classes,
+                         interned_documents, documents, annotations):
+        global best_validation_score
+        global best_validation_epoch
         k = 0
-        for temp_batch in eval_dataloader:
-            labels = temp_batch.pop('label', None)
-            batch = {k: v.to(device) for k, v in temp_batch.items()}
-            masker_output = torch.sigmoid(mask_model(**batch).logits)
-            classifier_output = classifier(**batch)
+        test_batch_size = 4
+        results = []
+        mask_model.eval()
+        # explanations = Generator(classifier, mask_model, tokenizer)
 
-            for j in range(len(masker_output)):
-                tokens = tokenizer.batch_decode(batch['input_ids'][j].unsqueeze(1))
-                x = masker_output[j]
-                expl = [x[i].item() for i in range(len(x))]
-                # expl = [0 if x < max(expl) / 10 else x / max(expl) for x in expl]
-                # print(classifier_output.logits.shape)
-                classification = classifier_output.logits[j].argmax(dim=-1).item()
-                print(j)
-                true_class = labels[j]
-                # print(list(zip(orig, x2)))
-                vis_data_records = [visualization.VisualizationDataRecord(
-                    expl,
-                    classifier_output.logits[j][classification],
-                    classification,
-                    true_class,
-                    true_class,
-                    1,
-                    tokens,
-                    1)]
-                html_obj = visualization.visualize_text(vis_data_records)
-                # print(html_obj)
-                # print(html_obj.data)
-                outfile.write(html_obj.data + "\n")
-                # print(tokenizer.batch_decode(batch['input_ids']))
-            # tokens = tokenizer.convert_ids_to_tokens(input_ids.flatten())
-            # print([(tokens[i], expl[i]) for i in range(len(tokens))])
-            k = k + 1
-            if k > 10:
-                break
+        with open(f'vizs-{index}.html', 'w') as outfile:
+            for batch_start in range(0, len(val), test_batch_size):
+                batch_elements = val[batch_start:min(batch_start + test_batch_size, len(val))]
+                # val = val[test_batch_size:]
+                targets = [evidence_classes[s.classification] for s in batch_elements]
+                targets = torch.tensor(targets, dtype=torch.long, device=device)
+                samples_encoding = [interned_documents[bert_pipeline.extract_docid_from_dataset_element(s)] for s in
+                                    batch_elements]
+                # encoded_batch = tokenizer(batch_elements, padding="max_length", truncation=True)
+                # input_ids = encoded_batch['input_ids']
+                # attention_masks = encoded_batch['attention_mask']
+                input_ids = torch.stack(
+                    [F.pad(samples_encoding[i]['input_ids'], (0, 512 - len(samples_encoding[i]['input_ids'].squeeze())),
+                           "constant", 0) for i in range(len(samples_encoding))]).squeeze(1).to(device)
+                attention_masks = torch.stack(
+                    [F.pad(samples_encoding[i]['attention_mask'],
+                           (0, 512 - len(samples_encoding[i]['attention_mask'].squeeze())), "constant", 0) for i in
+                     range(len(samples_encoding))]).squeeze(1).to(
+                    device)
+                all_preds = F.softmax(classifier(input_ids=input_ids, attention_mask=attention_masks).logits, dim=1)
+                all_cam_targets = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_masks).logits)
+                unrelated_tokens = attention_masks.detach().clone()
+                # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
+                unrelated_tokens = unrelated_tokens.roll(-1, 1)
+                unrelated_tokens[:, 0] = 0
+                unrelated_tokens[:, -1] = 0
 
-# def eval_batch(mask_model, input_ids, attention_mask, index=None):
-#     if index == None:
-#         #this is th lable
-#         index = np.argmax(output.cpu().data.numpy(), axis=-1)
-#     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-#     for temp_batch in eval_dataloader:
-#         labels = temp_batch.pop('label', None)
-#         batch = {k: v.to(device) for k, v in temp_batch.items()}
-#         masker_output = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_mask).logits)
-#         classifier_output = classifier(**batch)
-#
-#         for j in range(len(masker_output)):
-#             tokens = tokenizer.batch_decode(batch['input_ids'][j].unsqueeze(1))
-#             x = masker_output[j]
-#             expl = [x[i].item() for i in range(len(x))]
-#             # expl = [0 if x < max(expl) / 10 else x / max(expl) for x in expl]
-#             # print(classifier_output.logits.shape)
-#             classification = classifier_output.logits[j].argmax(dim=-1).item()
-#             print(j)
-#             true_class = labels[j]
-#             # print(list(zip(orig, x2)))
-#             vis_data_records = [visualization.VisualizationDataRecord(
-#                 expl,
-#                 classifier_output.logits[j][classification],
-#                 classification,
-#                 true_class,
-#                 true_class,
-#                 1,
-#                 tokens,
-#                 1)]
-#             html_obj = visualization.visualize_text(vis_data_records)
-#             # print(html_obj)
-#             # print(html_obj.data)
-#             outfile.write(html_obj.data + "\n")
-#             # print(tokenizer.batch_decode(batch['input_ids']))
-#         # tokens = tokenizer.convert_ids_to_tokens(input_ids.flatten())
-#         # print([(tokens[i], expl[i]) for i in range(len(tokens))])
-#         k = k + 1
-#         if k > 10:
-#             break
+                # unrelated_tokens[:,sep_locs] = 0
+                unrelated_tokens = unrelated_tokens.unsqueeze(2)
+                all_cam_targets = all_cam_targets * unrelated_tokens
+                d = 0
 
-# FORDOR remember you copy pasted the validation code!!
+                for s in batch_elements:
+                    preds = all_preds[d]
+                    cam_target = all_cam_targets[d]
+                    doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
+                    inp = documents[doc_name]
+                    # classification = "neg" if targets.item() == 0 else "pos"
+                    # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+                    # text = tokenizer.convert_ids_to_tokens(input_ids[0])
+                    # classification = "neg" if targets.item() == 0 else "pos"
+                    # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+                    # target_idx = targets.item()
+                    print("FORDOR")
+                    print(batch_start)
+
+                    cam_target = cam_target.clamp(min=0)
+                    cam = cam_target
+                    # cam = bert_pipeline.scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[d], cam)
+
+                    doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
+                    tokens = tokenizer.batch_decode(input_ids[d].unsqueeze(1))
+                    x = cam
+                    expl = [x[i].item() for i in range(len(x))]
+                    # expl = [0 if x < max(expl) / 10 else x / max(expl) for x in expl]
+                    # print(classifier_output.logits.shape)
+                    classification = preds.argmax(dim=-1).item()
+                    # print(j)`
+                    true_class = 0 if "neg" in doc_name.lower() else 1
+
+                    evidence_indices = []
+                    word_lists = []
+                    for evidence_tuple in s.evidences:
+                        for evidence in evidence_tuple:
+                            ev_words = evidence.text
+                            start_token = evidence.start_token
+                            end_token = evidence.end_token
+                            evidence_indices.append((start_token, end_token))
+                            word_lists.append(ev_words)
+
+                    final_indices = indices_per_token_from_scores_per_word(tokenizer, evidence_indices, inp, tokens)
+                    # print(list(zip(orig, x2)))
+                    vis_data_records = [visualization.VisualizationDataRecord(
+                        expl,
+                        preds[classification],
+                        classification,
+                        true_class,
+                        true_class,
+                        1,
+                        tokens,
+                        1)]
+                    html_obj = visualization.visualize_text(vis_data_records)
+                    # print(html_obj)
+                    # print(html_obj.data)
+                    soup = BeautifulSoup(html_obj.data, 'html.parser')
+                    marks = soup.find_all("mark")
+                    assert len(marks) == len(tokens)
+                    for start, end in final_indices:
+                        for i in range(start, end):
+                            mark = marks[i]
+                            mark['style'] += "; text-decoration: underline overline; text-decoration-color: blue;"
+                    outfile.write(str(soup) + "\n")
+                    # print(tokenizer.batch_decode(batch['input_ids']))
+                    # tokens = tokenizer.convert_ids_to_tokens(input_ids.flatten())
+                    # print([(tokens[i], expl[i]) for i in range(len(tokens))])
+                    d = d + 1
+                k = k + 1
+
+                if k > 10:
+                    break
+    # eval_dataset = eval_dataset.remove_columns(["text"])
+    # eval_dataset = eval_dataset.remove_columns(["label"])
+    # eval_dataset.set_format("torch")
+    # eval_dataloader = DataLoader(eval_dataset, batch_size=4)
+
+
+        test_batch_size = 4
+        results = []
+        mask_model.eval()
+        # explanations = Generator(classifier, mask_model, tokenizer)
+
+
 def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
     res = []
     sentences = tokenizer.batch_decode(input_ids)
@@ -403,7 +440,7 @@ def my_scores_per_word_from_scores_per_token(tokenizer, scores, input_ids):
         res.append(curr_res)
         curr_scores = scores[i]
         curr_ids = input_ids[i]
-        curr_sentence = sentences[i].split(" ")
+        curr_sentence = sentences[i].split()
         tokens = tokenizer.batch_decode(curr_ids)
         # alnum_trouble = False
         curr_word_len = 0
@@ -434,7 +471,7 @@ def scores_per_token_from_scores_per_word(tokenizer, scores, sentences):
         # res.append(curr_res)
         curr_scores = scores[i]
         # curr_ids = input_ids[i]
-        curr_sentence = sentences[i].split(" ")
+        curr_sentence = sentences[i].split()
         curr_tokens = tokenizer.batch_decode(tokens[i])
         # alnum_trouble = False
         curr_word_len = 0
@@ -453,6 +490,63 @@ def scores_per_token_from_scores_per_word(tokenizer, scores, sentences):
                 j += 1
                 curr_word_len = token_len
                 curr_res[t] = (curr_scores[j])
+    return res
+
+
+def indices_per_token_from_scores_per_word(tokenizer, indices, inp, tokens):
+
+    # tokens = tokenizer(inp, padding="max_length", truncation=True)
+    res = []
+    # for i in range(len(tokens)):
+    # curr_res = res[i]
+    # res.append(curr_res)
+    # curr_scores = scores[i]
+    # curr_ids = input_ids[i]
+    curr_sentence = inp.split()
+    # curr_tokens = tokenizer.batch_decode(tokens['input_ids'])
+    # alnum_trouble = False
+    curr_word_len = 0
+    j = -1
+    word_i = -1
+    token_i = 1
+    first_token= True
+    for start, end in indices:
+        # curr = start
+        # new_start = start
+        # new_end = end
+        while word_i < start and token_i < len(tokens):
+            token = tokens[token_i]
+            token_len = len(token)
+            part_token = token.startswith("##")
+            if not first_token and (part_token or curr_word_len < len(curr_sentence[word_i])):
+                # alnum_trouble = not (tokens[t].startswith("##") or tokens[t].isalnum())
+
+                curr_word_len += token_len -2 if part_token else token_len
+            else:
+                first_token = False
+                word_i += 1
+                curr_word_len = token_len
+                # curr_res[t] = (curr_scores[j])
+            token_i += 1
+        if token_i-1 >= len(tokens):
+            return res
+        new_start = token_i -1
+        while word_i < end and token_i < len(tokens):
+            token = tokens[token_i]
+            token_len = len(token)
+            part_token = token.startswith("##")
+            if not first_token and (part_token or curr_word_len < len(curr_sentence[word_i])):
+                # alnum_trouble = not (tokens[t].startswith("##") or tokens[t].isalnum())
+
+                curr_word_len += token_len - 2 if part_token else token_len
+            else:
+                first_token = False
+                word_i += 1
+                curr_word_len = token_len
+                # curr_res[t] = (curr_scores[j])
+            token_i += 1
+        new_end = token_i-1 if token_i-1 < len(tokens) else len(tokens) -2
+        res.append((new_start, new_end))
     return res
 
 
