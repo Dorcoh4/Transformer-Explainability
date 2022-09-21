@@ -130,12 +130,12 @@ def scores_per_word_from_scores_per_token(input, tokenizer, input_ids, scores_pe
 
         start_idx = end_idx
 
-    if (words_from_chars[:-1] != input[:len(words_from_chars)-1]):
-        print(words_from_chars)
-        print(input[:len(words_from_chars)])
-        print(words)
-        print(tokenizer.convert_ids_to_tokens(input_ids))
-        assert False
+    # if (words_from_chars[:-1] != input[:len(words_from_chars)-1]):
+    #     print(words_from_chars)
+    #     print(input[:len(words_from_chars)])
+    #     print(words)
+    #     print(tokenizer.convert_ids_to_tokens(input_ids))
+    #     assert False
 
     return torch.tensor(score_per_word)
 
