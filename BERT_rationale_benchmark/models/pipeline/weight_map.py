@@ -291,22 +291,22 @@ def epoch_validation(epoch, mask_model, classifier, tokenizer,  val, word_intern
                         "hard_rationale_predictions": hard_rationales
                     }],
                 }
-                results[i].append(result_dict)
+                results.append(result_dict)
                 # result_files[res].write(json.dumps(result_dict) + "\n")
-            truth = list(chain.from_iterable(Rationale.from_annotation(ann) for ann in annotations))
+    truth = list(chain.from_iterable(Rationale.from_annotation(ann) for ann in annotations))
     pred = list(chain.from_iterable(Rationale.from_instance(inst) for inst in results))
-            token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
-            token_level_pred = list(chain.from_iterable(rat.to_token_level() for rat in pred))
-            token_level_prf = score_hard_rationale_predictions(token_level_truth, token_level_pred)
-            print(token_level_prf)
-            value = token_level_prf['instance_macro']['f1']
-        if value > best_validation_score:
-            best_validation_score = value
-            best_validation_epoch = epoch
-        print(f"epoch {epoch} validation score: {value}")
-        print(f"BEST epoch {best_validation_epoch} BEST score: {best_validation_score}")
-        mask_model.train()
-        return value
+    token_level_truth = list(chain.from_iterable(rat.to_token_level() for rat in truth))
+    token_level_pred = list(chain.from_iterable(rat.to_token_level() for rat in pred))
+    token_level_prf = score_hard_rationale_predictions(token_level_truth, token_level_pred)
+    print(token_level_prf)
+    value = token_level_prf['instance_macro']['f1']
+    if value > best_validation_score:
+        best_validation_score = value
+        best_validation_epoch = epoch
+    print(f"epoch {epoch} validation score: {value}")
+    print(f"BEST epoch {best_validation_epoch} BEST score: {best_validation_score}")
+    mask_model.train()
+    return value
 
 
 

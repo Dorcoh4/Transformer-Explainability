@@ -50,7 +50,7 @@ def main():
     annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'val' + '.jsonl'))
     masker = weight_map.load_masker("7_bert_0_adamw")
     weight_map.epoch_validation(0, masker, evidence_classifier, tokenizer, val, word_interner, de_interner, evidence_classes,
-                         interned_documents, documents, annotations, range(5, 85, 5))
+                         interned_documents, documents, annotations)
 
 if __name__ == '__main__':
     sys.exit(main())
