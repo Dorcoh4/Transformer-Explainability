@@ -41,7 +41,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies/"
 
-suffix = "_bert_ent.1"
+suffix = "_bert_unf_10"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -173,13 +173,12 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     progress_bar = tqdm(range(num_training_steps))
     lambda1 = 0
-    lambda2 = 0.1
+    lambda2 = 0
     output_dropout = 0.2
     for epoch in range(num_epochs):
         running_loss = 0
         running_loss_ce = 0
         running_loss_mask = 0
-        running_entropy_loss = 0
         for batch in train_dataloader:
             batch = {k: v.to(device) for k, v in batch.items()}
             labels = batch.pop('label', None)
@@ -224,12 +223,10 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             running_loss += loss.item()
             running_loss_ce += ce_loss.item()
             running_loss_mask += mask_loss.item()
-            running_entropy_loss += entropy_loss.item()
         print(f"epoch {epoch}", flush=True)
         print(f"total loss : {running_loss}", flush=True)
         print(f"Primary loss : {running_loss_ce}", flush=True)
         print(f"Regularization loss : {running_loss_mask}", flush=True)
-        print(f"Entropy Regularization loss : {running_entropy_loss}", flush=True)
         torch.save(mask_model, f'{directory}imdb_masker-{epoch}{suffix}.pt')
         epoch_validation(epoch, mask_model, classifier, classify_tokenizer,  val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations)
 
