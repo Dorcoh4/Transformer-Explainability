@@ -40,7 +40,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies/"
 
-suffix = "_bert_cnt_001"
+suffix = "_bert_cnt_0005_d333"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -169,7 +169,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
     tanh = torch.nn.Tanh()
 
     progress_bar = tqdm(range(num_training_steps))
-    lambda1 = 0.001
+    lambda1 = 0.0005
     output_dropout = 0.333
     for epoch in range(num_epochs):
         running_loss = 0
@@ -180,7 +180,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             labels = batch.pop('label', None)
             g_out = mask_model(**batch)
             mask = sigmoid(g_out.logits)
-            # mask = F.dropout(mask, output_dropout)
+            mask = F.dropout(mask, output_dropout)
             attention_mask = batch['attention_mask']
             unrelated_tokens = attention_mask.detach().clone()
             # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
@@ -592,7 +592,7 @@ def main():
         print(f'Loading interned documents from {cache}')
         (interned_documents) = torch.load(cache)
     annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'val' + '.jsonl'))
-    masker = load_masker("99_bert_0_adamw")
+    masker = load_masker("7_bert_0_adamw")
     masker = train_masker(evidence_classifier, tokenizer, train_dataset, val, word_interner, de_interner, evidence_classes, interned_documents, documents, annotations, masker)
     # eval_eye(masker, evidence_classifier, tokenizer, val_dataset, "20_gt")
 
