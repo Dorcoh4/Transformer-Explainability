@@ -48,7 +48,7 @@ def main():
         print(f'Loading interned documents from {cache}')
         (interned_documents) = torch.load(cache)
     annotations = annotations_from_jsonl(os.path.join(args.data_dir, 'test' + '.jsonl'))
-    masker = weight_map.load_masker("7_bert_0_adamw")
+    masker = weight_map.load_masker("7_bert_d333")
     weight_map.epoch_validation(0, masker, evidence_classifier, tokenizer, test, word_interner, de_interner, evidence_classes,
                          interned_documents, documents, annotations)
 
