@@ -41,7 +41,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 directory = "C:/Users/Dor_local/Downloads/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/"
 data_dir = "C:/Users/Dor_local/Downloads/movies.tar/movies/" if 'win' in sys.platform else "/home/joberant/NLP_2122/dorcoh4/weight_map/movies/"
 
-suffix = "_bert_ce+e"
+suffix = "_bert_unf_10"
 
 best_validation_score = 0
 best_validation_epoch = 0
@@ -161,6 +161,8 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
         param.requires_grad = False
     for param in mask_model.bert.encoder.layer[11].parameters():
         param.requires_grad = True
+    for param in mask_model.bert.encoder.layer[10].parameters():
+        param.requires_grad = True
 
     mask_model.train()
     crossEntropyLoss = torch.nn.CrossEntropyLoss()
@@ -171,6 +173,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     progress_bar = tqdm(range(num_training_steps))
     lambda1 = 0
+    lambda2 = 0
     output_dropout = 0.2
     for epoch in range(num_epochs):
         running_loss = 0
@@ -208,7 +211,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
 
-            loss = ce_loss + lambda1 * mask_loss + entropy_loss
+            loss = ce_loss + lambda1 * mask_loss + lambda2 * entropy_loss
 
             loss.backward()
 
