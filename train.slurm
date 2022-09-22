@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=movies-mask__bert_d2_unfreeze
-#SBATCH --output=movies__bert_d2_unfreeze.out
-#SBATCH --error=movies__bert_d2_unfreeze.err
+#SBATCH --job-name=movies-mask__bert_ce+e
+#SBATCH --output=movies__bert_ce+e.out
+#SBATCH --error=movies__bert_ce+e.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
