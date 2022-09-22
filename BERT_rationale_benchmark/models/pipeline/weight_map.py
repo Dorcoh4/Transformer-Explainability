@@ -24,6 +24,7 @@ from bs4 import BeautifulSoup
 from datasets import Dataset
 from transformers import get_scheduler
 from tqdm.auto import tqdm
+import heapq
 from captum.attr import (
     visualization
 )
@@ -321,105 +322,112 @@ def eval_eye(mask_model, classifier, tokenizer, val, index, word_interner, de_in
         # explanations = Generator(classifier, mask_model, tokenizer)
 
         with open(f'vizs-{index}.html', 'w') as outfile:
-            for batch_start in range(0, len(val), test_batch_size):
-                batch_elements = val[batch_start:min(batch_start + test_batch_size, len(val))]
-                # val = val[test_batch_size:]
-                targets = [evidence_classes[s.classification] for s in batch_elements]
-                targets = torch.tensor(targets, dtype=torch.long, device=device)
-                samples_encoding = [interned_documents[bert_pipeline.extract_docid_from_dataset_element(s)] for s in
-                                    batch_elements]
-                # encoded_batch = tokenizer(batch_elements, padding="max_length", truncation=True)
-                # input_ids = encoded_batch['input_ids']
-                # attention_masks = encoded_batch['attention_mask']
-                input_ids = torch.stack(
-                    [F.pad(samples_encoding[i]['input_ids'], (0, 512 - len(samples_encoding[i]['input_ids'].squeeze())),
-                           "constant", 0) for i in range(len(samples_encoding))]).squeeze(1).to(device)
-                attention_masks = torch.stack(
-                    [F.pad(samples_encoding[i]['attention_mask'],
-                           (0, 512 - len(samples_encoding[i]['attention_mask'].squeeze())), "constant", 0) for i in
-                     range(len(samples_encoding))]).squeeze(1).to(
-                    device)
-                all_preds = F.softmax(classifier(input_ids=input_ids, attention_mask=attention_masks).logits, dim=1)
-                all_cam_targets = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_masks).logits)
-                unrelated_tokens = attention_masks.detach().clone()
-                # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
-                unrelated_tokens = unrelated_tokens.roll(-1, 1)
-                unrelated_tokens[:, 0] = 0
-                unrelated_tokens[:, -1] = 0
+            with open(f'vizs-{index}_normal.html', 'w') as outfile_normal:
+                outfiles = [outfile, outfile_normal]
+                for batch_start in range(0, len(val), test_batch_size):
+                    batch_elements = val[batch_start:min(batch_start + test_batch_size, len(val))]
+                    # val = val[test_batch_size:]
+                    targets = [evidence_classes[s.classification] for s in batch_elements]
+                    targets = torch.tensor(targets, dtype=torch.long, device=device)
+                    samples_encoding = [interned_documents[bert_pipeline.extract_docid_from_dataset_element(s)] for s in
+                                        batch_elements]
+                    # encoded_batch = tokenizer(batch_elements, padding="max_length", truncation=True)
+                    # input_ids = encoded_batch['input_ids']
+                    # attention_masks = encoded_batch['attention_mask']
+                    input_ids = torch.stack(
+                        [F.pad(samples_encoding[i]['input_ids'], (0, 512 - len(samples_encoding[i]['input_ids'].squeeze())),
+                               "constant", 0) for i in range(len(samples_encoding))]).squeeze(1).to(device)
+                    attention_masks = torch.stack(
+                        [F.pad(samples_encoding[i]['attention_mask'],
+                               (0, 512 - len(samples_encoding[i]['attention_mask'].squeeze())), "constant", 0) for i in
+                         range(len(samples_encoding))]).squeeze(1).to(
+                        device)
+                    all_preds = F.softmax(classifier(input_ids=input_ids, attention_mask=attention_masks).logits, dim=1)
+                    all_cam_targets = torch.sigmoid(mask_model(input_ids=input_ids, attention_mask=attention_masks).logits)
+                    unrelated_tokens = attention_masks.detach().clone()
+                    # sep_locs = [attention_mask[r].tolist().index(0) - 1 if attention_mask[r][-1] == 0 else len(attention_mask[r]) - 1 for r in range(len(attention_mask))]
+                    unrelated_tokens = unrelated_tokens.roll(-1, 1)
+                    unrelated_tokens[:, 0] = 0
+                    unrelated_tokens[:, -1] = 0
 
-                # unrelated_tokens[:,sep_locs] = 0
-                unrelated_tokens = unrelated_tokens.unsqueeze(2)
-                all_cam_targets = all_cam_targets * unrelated_tokens
-                d = 0
+                    # unrelated_tokens[:,sep_locs] = 0
+                    unrelated_tokens = unrelated_tokens.unsqueeze(2)
+                    all_cam_targets = all_cam_targets * unrelated_tokens
+                    d = 0
 
-                for s in batch_elements:
-                    preds = all_preds[d]
-                    cam_target = all_cam_targets[d]
-                    doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
-                    inp = documents[doc_name]
-                    # classification = "neg" if targets.item() == 0 else "pos"
-                    # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
-                    # text = tokenizer.convert_ids_to_tokens(input_ids[0])
-                    # classification = "neg" if targets.item() == 0 else "pos"
-                    # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
-                    # target_idx = targets.item()
-                    print("FORDOR")
-                    print(batch_start)
+                    for s in batch_elements:
+                        preds = all_preds[d]
+                        cam_target = all_cam_targets[d]
+                        doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
+                        inp = documents[doc_name]
+                        # classification = "neg" if targets.item() == 0 else "pos"
+                        # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+                        # text = tokenizer.convert_ids_to_tokens(input_ids[0])
+                        # classification = "neg" if targets.item() == 0 else "pos"
+                        # is_classification_correct = 1 if preds.argmax(dim=1) == targets else 0
+                        # target_idx = targets.item()
+                        print("FORDOR")
+                        print(batch_start)
 
-                    cam_target = cam_target.clamp(min=0)
-                    cam = cam_target
-                    # cam = bert_pipeline.scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[d], cam)
+                        cam_target = cam_target.clamp(min=0)
+                        cam = cam_target
+                        # cam = bert_pipeline.scores_per_word_from_scores_per_token(inp, tokenizer, input_ids[d], cam)
 
-                    doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
-                    tokens = tokenizer.batch_decode(input_ids[d].unsqueeze(1))
-                    x = cam
-                    expl = [x[i].item() for i in range(len(x))]
-                    # expl = [0 if x < max(expl) / 10 else x / max(expl) for x in expl]
-                    # print(classifier_output.logits.shape)
-                    classification = preds.argmax(dim=-1).item()
-                    # print(j)`
-                    true_class = 0 if "neg" in doc_name.lower() else 1
+                        doc_name = bert_pipeline.extract_docid_from_dataset_element(s)
+                        tokens = tokenizer.batch_decode(input_ids[d].unsqueeze(1))
+                        x = cam
+                        expl = [x[i].item() for i in range(len(x))]
+                        th_80 = heapq.nlargest(80, expl)
+                        expl_normal = [0 if x < th_80[79] else x / max(expl) for x in expl]
+                        exples = [expl, expl_normal]
+                        # print(classifier_output.logits.shape)
+                        classification = preds.argmax(dim=-1).item()
+                        # print(j)`
+                        true_class = 0 if "neg" in doc_name.lower() else 1
 
-                    evidence_indices = []
-                    word_lists = []
-                    for evidence_tuple in s.evidences:
-                        for evidence in evidence_tuple:
-                            ev_words = evidence.text
-                            start_token = evidence.start_token
-                            end_token = evidence.end_token
-                            evidence_indices.append((start_token, end_token))
-                            word_lists.append(ev_words)
+                        evidence_indices = []
+                        word_lists = []
+                        for evidence_tuple in s.evidences:
+                            for evidence in evidence_tuple:
+                                ev_words = evidence.text
+                                start_token = evidence.start_token
+                                end_token = evidence.end_token
+                                evidence_indices.append((start_token, end_token))
+                                word_lists.append(ev_words)
 
-                    final_indices = indices_per_token_from_scores_per_word(tokenizer, evidence_indices, inp, tokens)
-                    # print(list(zip(orig, x2)))
-                    vis_data_records = [visualization.VisualizationDataRecord(
-                        expl,
-                        preds[classification],
-                        classification,
-                        true_class,
-                        true_class,
-                        1,
-                        tokens,
-                        1)]
-                    html_obj = visualization.visualize_text(vis_data_records)
-                    # print(html_obj)
-                    # print(html_obj.data)
-                    soup = BeautifulSoup(html_obj.data, 'html.parser')
-                    marks = soup.find_all("mark")
-                    assert len(marks) == len(tokens)
-                    for start, end in final_indices:
-                        for i in range(start, end):
-                            mark = marks[i]
-                            mark['style'] += "; text-decoration: underline overline; text-decoration-color: blue;"
-                    outfile.write(str(soup) + "\n")
-                    # print(tokenizer.batch_decode(batch['input_ids']))
-                    # tokens = tokenizer.convert_ids_to_tokens(input_ids.flatten())
-                    # print([(tokens[i], expl[i]) for i in range(len(tokens))])
-                    d = d + 1
-                k = k + 1
+                        final_indices = indices_per_token_from_scores_per_word(tokenizer, evidence_indices, inp, tokens)
+                        # print(list(zip(orig, x2)))
+                        for l in range(2):
+                            file = outfiles[l]
+                            explanation = exples[l]
+                            vis_data_records = [visualization.VisualizationDataRecord(
+                                explanation,
+                                preds[classification],
+                                classification,
+                                true_class,
+                                true_class,
+                                1,
+                                tokens,
+                                1)]
+                            html_obj = visualization.visualize_text(vis_data_records)
+                            # print(html_obj)
+                            # print(html_obj.data)
+                            soup = BeautifulSoup(html_obj.data, 'html.parser')
+                            marks = soup.find_all("mark")
+                            assert len(marks) == len(tokens)
+                            for start, end in final_indices:
+                                for i in range(start, end):
+                                    mark = marks[i]
+                                    mark['style'] += "; text-decoration: underline overline; text-decoration-color: blue;"
+                            file.write(str(soup) + "\n")
+                            # print(tokenizer.batch_decode(batch['input_ids']))
+                            # tokens = tokenizer.convert_ids_to_tokens(input_ids.flatten())
+                            # print([(tokens[i], expl[i]) for i in range(len(tokens))])
+                        d = d + 1
+                    k = k + 1
 
-                if k > 10:
-                    break
+                    if k > 10:
+                        break
     # eval_dataset = eval_dataset.remove_columns(["text"])
     # eval_dataset = eval_dataset.remove_columns(["label"])
     # eval_dataset.set_format("torch")
