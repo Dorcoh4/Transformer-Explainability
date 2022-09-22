@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=movies-mask__bert_unf_10
-#SBATCH --output=movies__bert_unf_10.out
-#SBATCH --error=movies__bert_unf_10.err
+#SBATCH --job-name=d_bert_ent.1
+#SBATCH --output=movies__bert_ent.1.out
+#SBATCH --error=movies__bert_ent.1.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
