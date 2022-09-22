@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=test_masker
-#SBATCH --output=test_masker2.out
-#SBATCH --error=test_masker2.err
+#SBATCH --job-name=test_masker_d2
+#SBATCH --output=test_masker_d2.out
+#SBATCH --error=test_masker_d2.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
