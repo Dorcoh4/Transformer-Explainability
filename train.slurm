@@ -1,7 +1,7 @@
 #! /bin/sh
-#SBATCH --job-name=d_bert_ent_reg.001
-#SBATCH --output=movies__bert_ent_reg.001.out
-#SBATCH --error=movies__bert_ent_reg.001.err
+#SBATCH --job-name=d_bert_ent_reg.0001
+#SBATCH --output=movies__bert_ent_reg.0001.out
+#SBATCH --error=movies__bert_ent_reg.0001.err
 #SBATCH --partition=studentbatch
 #SBATCH --time=1500
 #SBATCH --nodes=1
