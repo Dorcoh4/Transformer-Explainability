@@ -143,7 +143,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1) if masker is None else masker
 
-    optimizer = AdamW(mask_model.parameters(), lr=1e-5)
+    optimizer = AdamW(mask_model.parameters(), lr=5e-5)
 
     num_epochs = 100
     num_training_steps = num_epochs * len(train_dataloader)
@@ -161,8 +161,8 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
         param.requires_grad = False
     for param in mask_model.bert.encoder.layer[11].parameters():
         param.requires_grad = True
-    for param in mask_model.bert.encoder.layer[10].parameters():
-        param.requires_grad = True
+    # for param in mask_model.bert.encoder.layer[10].parameters():
+    #     param.requires_grad = True
 
     mask_model.train()
     crossEntropyLoss = torch.nn.CrossEntropyLoss()
