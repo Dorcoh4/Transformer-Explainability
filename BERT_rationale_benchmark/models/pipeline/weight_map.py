@@ -143,7 +143,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     mask_model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=1) if masker is None else masker
 
-    optimizer = AdamW(mask_model.parameters(), lr=5e-5)
+    optimizer = AdamW(mask_model.parameters(), lr=1e-5)
 
     num_epochs = 100
     num_training_steps = num_epochs * len(train_dataloader)
@@ -173,8 +173,8 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
 
     progress_bar = tqdm(range(num_training_steps))
     lambda1 = 0
-    lambda2 = 1.0
-    output_dropout = 0.2
+    lambda2 = 0
+    output_dropout = 0
     for epoch in range(num_epochs):
         running_loss = 0
         running_loss_ce = 0
@@ -213,7 +213,7 @@ def train_masker(classifier, classify_tokenizer, train_dataset, val, word_intern
             # entropy_loss = crossEntropyLoss(out2.logits, masked_probs)
             # mask_losses = - torch.var(mask, dim=1, unbiased=False)
             # mask_loss = mask_losses.sum() / batch_size
-
+            lambda1 = 2.1 / (attention_mask.sum())
             loss = ce_loss + lambda1 * mask_loss + lambda2 * entropy_loss
 
             loss.backward()
